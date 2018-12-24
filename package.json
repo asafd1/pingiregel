@@ -4,11 +4,13 @@
   "description": "",
   "main": "server.js",
   "dependencies": {
-    "mongo-in-memory": "^0.0.5",
     "mongodb": "^3.1.10",
-    "node-telegram-bot-api": "^0.30.0"
+    "node-telegram-bot-api": "^0.30.0",
+    "express": "^4.16.4"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "mongo-in-memory": "^0.0.5"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
