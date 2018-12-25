@@ -4,6 +4,14 @@ const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
+// TODO:
+// mongo auth
+// schedule
+// backup db to s3 (dropbox?) 
+// webhook
+// deployment
+// MEAN lightrail
+// unit tests
 
 var DB = require("./db");
 const port = 80;
