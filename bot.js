@@ -1,12 +1,35 @@
 const TelegramBot = require('node-telegram-bot-api');
+var DB;
 
-// replace the value below with the Telegram token you receive from @BotFather
-const token = process.argv[2];
+var token;
 
-// Create a bot that uses 'polling' to fetch new updates
-const bot = new TelegramBot(token, {polling: false});
+var bot;
 
-const opts = {
+function setWebHook(bot) {
+  console.log(bot); 
+  DB.getSetting("baseUrl").then((value) => {
+    url = value.value + "/webhook";
+    console.log("url="+url);
+    bot.setWebHook(url);
+  });
+}
+
+function initBot(token) {
+  bot = new TelegramBot(token, {polling: false}); 
+  return bot;
+}
+
+exports.init = function (db) {
+  DB = db;
+  DB.getMisc("token")
+  .then((value) => {return value;})
+  .then((doc) => initBot(doc.value))
+  .then((bot) => {setWebHook(bot)});
+}
+
+exports.sendPoll = function () {
+  console.log("sending poll");
+  const opts = {
     reply_markup: JSON.stringify({
       inline_keyboard: [
         [{"text":"כן", "callback_data":"yes"},{"text":"אולי", "callback_data":"maybe"},{"text":"לא", "callback_data":"no"}]
@@ -14,4 +37,18 @@ const opts = {
       "resize_keyboard" : true,
     })
   };
-bot.sendMessage("-1001428218098", "מגיע?", opts);
+  bot.sendMessage("-1001428218098", "מגיע?", opts);
+}
+
+function handleVote(callback_query) {
+  response = "Thank you " + 
+              callback_query.from.first_name + 
+              " for voting " + 
+              callback_query.data;
+  bot.answerCallbackQuery(callback_query.id, response);
+}
+
+exports.handleCallback = function (requestBody) {
+  console.log(requestBody.callback_query);
+  handleVote(requestBody.callback_query);
+}

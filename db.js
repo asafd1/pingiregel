@@ -6,12 +6,13 @@ var mongouri = "mongodb://localhost:27017/";
 
 var db;
 
-MongoClient.connect(mongouri, function(err, mongodb) {
-    assert.equal(null, err);
-    db = mongodb.db(DBNAME);
-    console.log("connected to db: "+ db.databaseName);
-    }
-);
+exports.connect = function () {
+    return (MongoClient.connect(mongouri).then((mongodb) => {
+        db = mongodb.db(DBNAME);
+        console.log("connected to db: "+ db.databaseName);
+        return this;
+    }));
+}
 
 // SETTINGS
 exports.getSetting = function (key) {

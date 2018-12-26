@@ -11,11 +11,19 @@ app.use(bodyParser.json());
 // webhook
 // deployment
 // MEAN lightrail
+// error handling
 // unit tests
 
-var DB = require("./db");
-const port = 80;
+function error() {
+  console.log("error!!!!");
+}
 
+var DB = require("./db");
+var BOT = require("./bot");
+
+DB.connect().then((db) => BOT.init(db)).catch(error);
+
+const port = 80;
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
 
 function sendResponse(response, value) {
@@ -60,4 +68,10 @@ app.route('/misc')
 .post(function(request, response, next) {
   p = DB.insertMisc(request.body);
   p.then((value) => {sendResponse(response, value)});
+});
+
+app.route('/webhook')
+.all(function(request, response, next) {
+  p = BOT.handleCallback(request.body);
+  response.send(200);
 });
