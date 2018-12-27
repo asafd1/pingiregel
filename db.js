@@ -15,14 +15,14 @@ exports.connect = function () {
 }
 
 // SETTINGS
-exports.getSetting = function (key) {
-    console.log("getting setting: " + key);
-    return db.collection("settings").findOne({key:key});
+exports.getSetting = function (_key) {
+    console.log("getting setting: " + _key);
+    return db.collection("settings").findOne({key:_key});
 }
 
-exports.deleteSetting = function (key) {
-    console.log("delete setting: " + key);
-    return db.collection("settings").deleteOne({key:key});
+exports.deleteSetting = function (_key) {
+    console.log("delete setting: " + _key);
+    return db.collection("settings").deleteOne({key:_key});
 }
 
 exports.insertSetting = function (setting) {
@@ -36,14 +36,14 @@ exports.getSettings = function () {
 }
 
 // MISC
-exports.getMisc = function (key) {
-    console.log("getting misc: " + key);
-    return db.collection("misc").findOne({key:key});
+exports.getMisc = function (_key) {
+    console.log("getting misc: " + _key);
+    return db.collection("misc").findOne({key:_key});
 }
 
-exports.deleteMisc = function (key) {
-    console.log("delete misc: " + key);
-    return db.collection("misc").deleteOne({key:key});
+exports.deleteMisc = function (_key) {
+    console.log("delete misc: " + _key);
+    return db.collection("misc").deleteOne({key:_key});
 }
 
 exports.insertMisc = function (setting) {
@@ -52,9 +52,9 @@ exports.insertMisc = function (setting) {
 }
 
 // PLAYERS
-exports.getPlayer = function (id) {
-    console.log("getting player by id: " + id);
-    return db.collection("players").findOne({id:id});
+exports.getPlayer = function (_id) {
+    console.log("getting player by id: " + _id);
+    return db.collection("players").findOne({id:_id});
 }
 
 exports.getPlayers = function () {
@@ -67,7 +67,7 @@ exports.insertPlayer = function (player) {
     return db.collection("players").insertOne(player);
 }
 
-exports.updatePlayer = function (id, player) {
-    console.log("updating player by id: " + id);
-    return db.collection("players").updateOne({id:id}, { $set: player });
+exports.updatePlayer = function (_id, player) {
+    console.log("updating player by id: " + _id);
+    return db.collection("players").updateOne({id:_id}, { $set: player });
 }

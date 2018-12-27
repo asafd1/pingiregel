@@ -5,7 +5,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 // TODO:
-// mongo auth
+// mongo auth + app auth + encryption
 // schedule
 // backup db to s3 (dropbox?) 
 // webhook
@@ -14,14 +14,15 @@ app.use(bodyParser.json());
 // error handling
 // unit tests
 
-function error() {
-  console.log("error!!!!");
+function errorHandler(_error) {
+  console.log("ERROR : " + _error);
 }
 
 var DB = require("./db");
 var BOT = require("./bot");
+var CRYPTO = require("./crypto");
 
-DB.connect().then((db) => BOT.init(db)).catch(error);
+DB.connect().then((db) => BOT.init(db)).catch((error) => errorHandler(error));
 
 const port = 80;
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
@@ -33,6 +34,24 @@ function sendResponse(response, value) {
     response.send(404);
   }
 }
+
+function verifyPassword(request, response, next) {
+  if (!request.headers.password || request.headers.password != CRYPTO.getPassword()) {
+    response.send(401);
+    return false;
+  }
+  return true;
+}
+
+app.use(function (request, response, next) {
+  if (request.method != "GET" || request.path.startsWith("/misc")) {
+    if (verifyPassword(request, response, next)) {
+      next()
+    }
+  } else {
+    next()
+  }
+})
 
 app.route('/settings')
 .get(function(_request, response, next) {

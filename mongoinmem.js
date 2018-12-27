@@ -10,18 +10,18 @@ const token = process.argv[2];
 function addKey(collection, _key, _value) {
     collection.insertOne({key:_key, value:_value}).then(console.log(_key + " = " + _value));
 }
+
 function init(db) {
-    promise = db.createCollection("settings");
-    promise.then((collection) => {
+    db.createCollection("misc")
+    .then((collection) => {
         addKey(collection, "token", token);
-        addKey(collection, "targetForGame", 10);
     });
 }
 
 mongoServerInstance.start((err, config) => {
     assert.equal(null, err);
     console.log("HOST " + config.host);
-    console.log("PORT " + config.port); 
+    console.log("PORT " + config.port);
 });
 
 MongoClient.connect(mongoServerInstance.getMongouri(), function(err, mongodb) {
