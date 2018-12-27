@@ -1,5 +1,7 @@
 var express = require('express');
 var app = express();
+var fs = require('fs');
+var https = require('https');
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -23,9 +25,17 @@ var BOT = require("./bot");
 var CRYPTO = require("./crypto");
 
 DB.connect().then((db) => BOT.init(db)).catch((error) => errorHandler(error));
+//DB.connect();
 
-const port = 80;
-app.listen(port, () => console.log(`App listening on port ${port}!`))
+const port = 443;
+
+var privateKey = fs.readFileSync( './creds/pingiregel-private.key' );
+var certificate = fs.readFileSync( './creds/pingiregel-public.pem' );
+
+https.createServer({
+    key: privateKey,
+    cert: certificate
+}, app).listen(port, () => console.log(`App listening on port ${port}!`));
 
 function sendResponse(response, value) {
   if (value) {
