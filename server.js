@@ -25,19 +25,19 @@ var CRYPTO = require("./crypto");
 DB.connect().then((db) => BOT.init(db)).catch((error) => errorHandler(error));
 
 const port = 80;
-app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+app.listen(port, () => console.log(`App listening on port ${port}!`))
 
 function sendResponse(response, value) {
   if (value) {
     response.send(value)
   } else {
-    response.send(404);
+    response.sendStatus(404);
   }
 }
 
 function verifyPassword(request, response, next) {
   if (!request.headers.password || request.headers.password != CRYPTO.getPassword()) {
-    response.send(401);
+    response.sendStatus(401);
     return false;
   }
   return true;
@@ -89,8 +89,14 @@ app.route('/misc')
   p.then((value) => {sendResponse(response, value)});
 });
 
+app.route('/poll')
+.post(function(request, response, next) {
+  p = BOT.sendPoll();
+});
+
 app.route('/webhook')
 .all(function(request, response, next) {
   p = BOT.handleCallback(request.body);
-  response.send(200);
+  response.sendStatus(200);
 });
+

@@ -6,10 +6,9 @@ var token;
 var bot;
 
 function setWebHook(bot) {
-  console.log(bot); 
   DB.getSetting("baseUrl").then((value) => {
     url = value.value + "/webhook";
-    console.log("url="+url);
+    console.log("webhook url="+url);
     bot.setWebHook(url);
   });
 }
