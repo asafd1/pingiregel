@@ -7,7 +7,7 @@ var mongouri = "mongodb://localhost:27017/";
 var db;
 
 exports.connect = function () {
-    return (MongoClient.connect(mongouri).then((mongodb) => {
+    return (MongoClient.connect(mongouri, { useNewUrlParser: true }).then((mongodb) => {
         db = mongodb.db(DBNAME);
         console.log("connected to db: "+ db.databaseName);
         return this;

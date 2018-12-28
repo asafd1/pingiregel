@@ -35,7 +35,6 @@ function readPass() {
       });
       
       lineReader.on('line', function (line) {
-        console.log('Line from file:', line);
         password = line;
       });
 }
