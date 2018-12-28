@@ -8,5 +8,5 @@ cmd='openssl req -newkey rsa:2048 -sha256 -nodes -keyout ./creds/pingiregel-priv
 cmd+=$1
 cmd+='"'
 echo $cmd
-#cmd
+eval $cmd
 
