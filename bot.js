@@ -2,18 +2,20 @@ const TelegramBot = require('node-telegram-bot-api');
 var fs = require('fs');
 
 var DB;
-
 var token;
-
 var bot;
 
-var certificate = fs.readFileSync( './creds/pingiregel-public.pem' );
+//Promise.config({ cancellation: true });
+process.env.NTBA_FIX_350 = 1;
 
 function setWebHook(bot) {
   DB.getSetting("baseUrl").then((value) => {
     url = value.value + "/webhook";
     console.log("webhook url="+url);
-    bot.setWebHook(url, certificate);
+    bot.setWebHook(url, { certificate : "./creds/pingiregel-public.pem" }, { contentType: "application/octet-stream" } );
+  }).catch((e) => {
+    console.log(e);
+    throw e;
   });
 }
 
