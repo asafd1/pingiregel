@@ -10,11 +10,10 @@ app.use(bodyParser.json());
 // mongo auth + app auth + encryption
 // schedule
 // backup db to s3 (dropbox?) 
-// webhook
 // deployment
-// MEAN lightrail
+// lightrail
 // error handling
-// unit tests
+// unit tests (jest?)
 
 function errorHandler(_error) {
   console.log("ERROR : " + _error);
@@ -25,7 +24,6 @@ var BOT = require("./bot");
 var CRYPTO = require("./crypto");
 
 DB.connect().then((db) => BOT.init(db)).catch((error) => errorHandler(error));
-//DB.connect();
 
 const port = 443;
 

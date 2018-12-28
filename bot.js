@@ -1,5 +1,4 @@
 const TelegramBot = require('node-telegram-bot-api');
-var fs = require('fs');
 
 var DB;
 var token;
@@ -51,6 +50,8 @@ function handleVote(callback_query) {
               " for voting " + 
               callback_query.data;
   bot.answerCallbackQuery(callback_query.id, response);
+  var game = require("./game").init(db).next();
+  bot.sendVenue(game);
 }
 
 exports.handleCallback = function (requestBody) {
