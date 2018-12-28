@@ -25,15 +25,19 @@ var CRYPTO = require("./crypto");
 
 DB.connect().then((db) => BOT.init(db)).catch((error) => errorHandler(error));
 
-const port = 443;
-
-var privateKey = fs.readFileSync( './creds/pingiregel-private.key' );
-var certificate = fs.readFileSync( './creds/pingiregel-public.pem' );
-
-https.createServer({
-    key: privateKey,
-    cert: certificate
-}, app).listen(port, () => console.log(`App listening on port ${port}!`));
+if (process.argv[2] == "local") {
+  const port = 80;
+  app.listen(port, () => console.log(`Local app listening on port ${port}!`));
+} else {
+  var privateKey = fs.readFileSync( './creds/pingiregel-private.key' );
+  var certificate = fs.readFileSync( './creds/pingiregel-public.pem' );
+  
+  const port = 443;
+  https.createServer({
+      key: privateKey,
+      cert: certificate
+  }, app).listen(port, () => console.log(`App listening on port ${port}!`));
+}
 
 function sendResponse(response, value) {
   if (value) {
