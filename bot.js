@@ -13,8 +13,8 @@ var bot;
 process.env.NTBA_FIX_350 = 1;
 
 function setWebHook(bot) {
-  DB.getSetting("baseUrl").then((value) => {
-    url = value.value + "/webhook";
+  DB.getSetting("baseUrl").then((doc) => {
+    url = doc.value + "/webhook";
     console.log("webhook url="+url);
     var opts = {};
     if (fs.existsSync(certificatePath)) {
@@ -40,7 +40,7 @@ exports.init = function (db) {
   .then((bot) => {setWebHook(bot)});
 }
 
-exports.sendPoll = function () {
+exports.sendPoll = function (day, hour, title) {
   console.log("sending poll");
   const opts = {
     reply_markup: JSON.stringify({
@@ -50,23 +50,23 @@ exports.sendPoll = function () {
       "resize_keyboard" : true,
     })
   };
-  bot.sendMessage(GROUP_CHAT_ID, "מגיע?", opts);
+  
+  var question = `מגיע לכדורגל ביום ${day} ב-${hour} ב${title}?`;
+  console.log()
+  bot.sendMessage(GROUP_CHAT_ID, question, opts);
 }
 
 function sendVenue(chatId, game) {
   bot.sendVenue(chatId, game.venue.location.latitude, game.venue.location.longtitude, game.venue.title, game.venue.address);
 }
 
-function handleVote(callback_query) {
+function callbackReply(callback_query) {
   response = "Thank you " + 
               callback_query.from.first_name + 
               " for voting " + 
               callback_query.data;
   bot.answerCallbackQuery(callback_query.id, response);
-  var game = require("./game").init(DB).create();
 }
-
-
 
 exports.handleCallback = function (requestBody) {
   console.log(requestBody.callback_query);

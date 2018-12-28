@@ -1,7 +1,4 @@
-exports.init = function (db) {
-    DB = db;
-    return this;
-}
+const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"];
 
 function getDefaultTime() {
     dayOfWeek = 4; // Thursday
@@ -18,8 +15,6 @@ function getDefaultTime() {
     return resultDate;
 }
 
-console.log(getDefaultTime());
-
 function getDefaultVenue() {
     return venue = {
         location : {
@@ -31,20 +26,30 @@ function getDefaultVenue() {
     };
 }
 
-exports.create = function (time, venue) {
-    var game = {};
+// Constructor
+function Game(_time, _venue) {
+    if (typeof _time === 'undefined') {
+        this.time = getDefaultTime();
+    } else {
+        this.time = _time;
+    }
+
+    if (typeof _venue === 'undefined') {
+        this.venue = getDefaultVenue();
+    } else {
+        this.venue = _venue;
+    }
     
-    if (typeof time === 'undefined') {
-        game.time = getDefaultTime();
-    } else {
-        game.time = time;
-    }
+    this.lastSent = null;
+    this.status = "open";
 
-    if (typeof venue === 'undefined') {
-        game.venue = getDefaultVenue();
-    } else {
-        game.venue = venue;
+    this.getDayOfWeek = function () {
+        return daysOfWeek[this.time.getDay()];
     }
-
-    return game;
+    
+    this.getHour = function () {
+        return hour = (this.time.getHours() + (this.time.getTimezoneOffset() / 60)) + ":00";
+    }
 }
+
+module.exports = Game;

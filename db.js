@@ -71,3 +71,19 @@ exports.updatePlayer = function (_id, player) {
     console.log("updating player by id: " + _id);
     return db.collection("players").updateOne({id:_id}, { $set: player });
 }
+
+// GAMES
+exports.getGames = function (_status, _after) {
+    console.log("getting games (by status=${_status} and after=${_after}");
+    return db.collection("games").find({status:_status, time: { $gt : _after }}).toArray();
+}
+
+exports.addGame = function (game) {
+    console.log("adding game: " + game);
+    return db.collection("games").insertOne(game);
+}
+
+exports.updateGame = function (_id, game) {
+    console.log("updating game by id: " + _id);
+    return db.collection("games").updateOne({id:_id}, { $set: game });
+}

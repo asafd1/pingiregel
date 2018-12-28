@@ -20,10 +20,10 @@ function errorHandler(_error) {
 }
 
 var DB = require("./db");
-var BOT = require("./bot");
 var CRYPTO = require("./crypto");
+var MGR = require("./mgr");
 
-DB.connect().then((db) => BOT.init(db)).catch((error) => errorHandler(error));
+DB.connect().then((db) => MGR.init(db)).catch((error) => errorHandler(error));
 
 if (process.argv[2] == "local") {
   const port = 80;
@@ -109,14 +109,20 @@ app.route('/misc')
 
 app.route('/poll')
 .post(function(request, response, next) {
-  p = BOT.sendPoll();
+  p = MGR.pollCurrentGame();
+  response.sendStatus(200);
+});
+
+app.route('/check')
+.post(function(request, response, next) {
+  p = MGR.check();
   response.sendStatus(200);
 });
 
 app.route('/webhook')
 .post(function(request, response, next) {
   console.log("webhook");
-  p = BOT.handleCallback(request.body);
+  p = MGR.handleCallback(request.body);
   response.sendStatus(200);
 });
 
