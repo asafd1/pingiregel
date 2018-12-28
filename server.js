@@ -53,13 +53,19 @@ function verifyPassword(request, response, next) {
   return true;
 }
 
+function shouldVerifyPassword(request) {
+  if (request.path.startsWith("/webhook")) return false;
+  if (request.path.startsWith("/misc")) return true;
+  if (request.method != "GET") return true;
+}
+
 app.use(function (request, response, next) {
-  if (request.method != "GET" || request.path.startsWith("/misc")) {
+  if (shouldVerifyPassword(request)) {
     if (verifyPassword(request, response, next)) {
-      next()
+      next();
     }
   } else {
-    next()
+    next();
   }
 })
 
@@ -102,10 +108,12 @@ app.route('/misc')
 app.route('/poll')
 .post(function(request, response, next) {
   p = BOT.sendPoll();
+  response.sendStatus(200);
 });
 
 app.route('/webhook')
 .all(function(request, response, next) {
+  console.log("webhook");
   p = BOT.handleCallback(request.body);
   response.sendStatus(200);
 });
