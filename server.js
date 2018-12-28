@@ -105,7 +105,7 @@ app.route('/poll')
 });
 
 app.route('/webhook')
-.all(function(request, response, next) {
+.post(function(request, response, next) {
   p = BOT.handleCallback(request.body);
   response.sendStatus(200);
 });
