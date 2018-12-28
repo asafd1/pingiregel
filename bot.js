@@ -1,8 +1,13 @@
 const TelegramBot = require('node-telegram-bot-api');
+var fs = require('fs');
+
+const certificatePath = "./creds/pingiregel-public.pem";
+const GROUP_CHAT_ID = "-1001428218098";
 
 var DB;
 var token;
 var bot;
+
 
 //Promise.config({ cancellation: true });
 process.env.NTBA_FIX_350 = 1;
@@ -11,7 +16,11 @@ function setWebHook(bot) {
   DB.getSetting("baseUrl").then((value) => {
     url = value.value + "/webhook";
     console.log("webhook url="+url);
-    bot.setWebHook(url, { certificate : "./creds/pingiregel-public.pem" }, { contentType: "application/octet-stream" } );
+    var opts = {};
+    if (fs.existsSync(certificatePath)) {
+      opts = { certificate : certificatePath };
+    }
+    bot.setWebHook(url, opts, { contentType: "application/octet-stream" } );
   }).catch((e) => {
     console.log(e);
     throw e;
@@ -41,7 +50,11 @@ exports.sendPoll = function () {
       "resize_keyboard" : true,
     })
   };
-  bot.sendMessage("-1001428218098", "מגיע?", opts);
+  bot.sendMessage(GROUP_CHAT_ID, "מגיע?", opts);
+}
+
+function sendVenue(chatId, game) {
+  bot.sendVenue(chatId, game.venue.location.latitude, game.venue.location.longtitude, game.venue.title, game.venue.address);
 }
 
 function handleVote(callback_query) {
@@ -50,9 +63,10 @@ function handleVote(callback_query) {
               " for voting " + 
               callback_query.data;
   bot.answerCallbackQuery(callback_query.id, response);
-  var game = require("./game").init(db).next();
-  bot.sendVenue(game);
+  var game = require("./game").init(DB).create();
 }
+
+
 
 exports.handleCallback = function (requestBody) {
   console.log(requestBody.callback_query);

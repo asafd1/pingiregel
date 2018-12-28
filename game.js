@@ -10,7 +10,6 @@ function getDefaultTime() {
     var resultDate = new Date();
     resultDate.setDate(resultDate.getDate() + (7 + dayOfWeek - resultDate.getDay()) % 7);
     hour -= resultDate.getTimezoneOffset() / 60;
-    console.log(hour);
     
     resultDate.setHours(hour);
     resultDate.setMinutes(0);
@@ -22,14 +21,14 @@ function getDefaultTime() {
 console.log(getDefaultTime());
 
 function getDefaultVenue() {
-    venue = {
+    return venue = {
         location : {
-            longitude : 34.835400,
+            longtitude : 34.835400,
             latitude : 32.138170
         },
         title	: "מרכז הטניס",
         address	: "דרך הטניס 6, רמת השרון"
-    }
+    };
 }
 
 exports.create = function (time, venue) {
