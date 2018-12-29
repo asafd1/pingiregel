@@ -82,7 +82,7 @@ exports.sendPoll = function (gameId, day, hour, title, results, messageId) {
   if (!messageId) {
     bot.sendMessage(pingiregelGroupChatId, question, opts);
   } else {
-    bot.editMessageReplyMarkup({inline_keyboard}, {chat_id: GROUP_CHAT_ID, message_id: messageId});
+    bot.editMessageReplyMarkup({inline_keyboard}, {chat_id: pingiregelGroupChatId, message_id: messageId});
   }
 }
 
