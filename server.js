@@ -154,10 +154,26 @@ app.route('/check')
   // response.sendStatus(200);
 });
 
+function dumpWebhook(request) {
+  var msg = "webhook - ";
+  if (request.body.message) {
+    msg += "message: " + request.method + " " +  request.body.message.text;
+  } else if (request.body.callback_query) {
+    msg += "callback_query: " + request.method + " " +  request.body.callback_query.data;
+  } else {
+    msg += "misc: " + request.method + " " + JSON.stringify(request.body);
+  }
+  console.log(msg);
+}
+
 app.route('/webhook')
+.all(function(request, response, next) {
+  dumpWebhook(request);
+})
 .post(function(request, response, next) {
-  console.log("webhook: " + request.path);
-  p = MGR.handleCallback(request.body);
+  if (request.body.callback_query) {
+    p = MGR.handleCallback(request.body);
+  }
   response.sendStatus(200);
 });
 
