@@ -10,36 +10,39 @@ app.use(bodyParser.json());
 // mongo auth + app auth + encryption
 // schedule
 // backup db to s3 (dropbox?) 
-// webhook
 // deployment
-// MEAN lightrail
+// lightrail
 // error handling
-// unit tests
+// unit tests (jest?)
+// authn p14c
 
 function errorHandler(_error) {
   console.log("ERROR : " + _error);
 }
 
 var DB = require("./db");
-var BOT = require("./bot");
 var CRYPTO = require("./crypto");
+var MGR = require("./mgr");
 
-DB.connect().then((db) => BOT.init(db)).catch((error) => errorHandler(error));
-//DB.connect();
+DB.connect().then((db) => MGR.init(db)).catch((error) => errorHandler(error));
 
-const port = 443;
-
-var privateKey = fs.readFileSync( './creds/pingiregel-private.key' );
-var certificate = fs.readFileSync( './creds/pingiregel-public.pem' );
-
-https.createServer({
-    key: privateKey,
-    cert: certificate
-}, app).listen(port, () => console.log(`App listening on port ${port}!`));
+if (process.argv[2] == "local") {
+  const port = 80;
+  app.listen(port, () => console.log(`Local app listening on port ${port}!`));
+} else {
+  var privateKey = fs.readFileSync( './creds/pingiregel-private.key' );
+  var certificate = fs.readFileSync( './creds/pingiregel-public.pem' );
+  
+  const port = 443;
+  https.createServer({
+      key: privateKey,
+      cert: certificate
+  }, app).listen(port, () => console.log(`App listening on port ${port}!`));
+}
 
 function sendResponse(response, value) {
   if (value) {
-    response.send(value)
+    response.send(DB.prepareForSend(value));
   } else {
     response.sendStatus(404);
   }
@@ -75,7 +78,7 @@ app.route('/settings')
   p.then((value) => {sendResponse(response, value)});
 })
 .post(function(request, response, next) {
-  p = DB.insertSetting(request.body);
+  p = DB.addSetting(request.body);
   p.then((value) => {sendResponse(response, value)});
 });
 
@@ -101,20 +104,76 @@ app.route('/misc/:setting')
 
 app.route('/misc')
 .post(function(request, response, next) {
-  p = DB.insertMisc(request.body);
+  p = DB.addMisc(request.body);
   p.then((value) => {sendResponse(response, value)});
 });
 
+app.route('/games')
+.get(function(request, response, next) {
+  p = DB.getGames();
+  p.then((value) => {sendResponse(response, value)});
+})
+.post(function(request, response, next) {
+  p = DB.addGame(request.body);
+  p.then((value) => {sendResponse(response, value)});
+});
+
+app.route('/games/:id')
+.delete(function(request, response, next) {
+  p = DB.deleteGame(request.params.id);
+  p.then((value) => {sendResponse(response, value)});
+});
+
+app.route('/players')
+.get(function(request, response, next) {
+  p = DB.getPlayers();
+  p.then((value) => {sendResponse(response, value)});
+})
+.post(function(request, response, next) {
+  p = DB.addPlayer(request.body);
+  p.then((value) => {sendResponse(response, value)});
+});
+
+app.route('/players/:id')
+.delete(function(request, response, next) {
+  p = DB.deletePlayer(request.params.id);
+  p.then((value) => {sendResponse(response, value)});
+});
+
+
 app.route('/poll')
 .post(function(request, response, next) {
-  p = BOT.sendPoll();
+  p = MGR.pollCurrentGame();
   response.sendStatus(200);
 });
 
-app.route('/webhook')
+app.route('/check')
 .post(function(request, response, next) {
-  console.log("webhook");
-  p = BOT.handleCallback(request.body);
+  p = MGR.check();
+  p.then((value) => {sendResponse(response, value)});
+  // response.sendStatus(200);
+});
+
+function dumpWebhook(request) {
+  var msg = "webhook - ";
+  if (request.body.message) {
+    msg += "message: " + request.method + " " +  request.body.message.text;
+  } else if (request.body.callback_query) {
+    msg += "callback_query: " + request.method + " " +  request.body.callback_query.data;
+  } else {
+    msg += "misc: " + request.method + " " + JSON.stringify(request.body);
+  }
+  console.log(msg);
+}
+
+app.route('/webhook')
+.all(function(request, response, next) {
+  dumpWebhook(request);
+})
+.post(function(request, response, next) {
+  if (request.body.callback_query) {
+    p = MGR.handleCallback(request.body);
+  }
   response.sendStatus(200);
 });
 
