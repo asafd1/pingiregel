@@ -60,7 +60,7 @@ function sendVenue(chatId, game) {
   bot.sendVenue(chatId, game.venue.location.latitude, game.venue.location.longtitude, game.venue.title, game.venue.address);
 }
 
-function callbackReply(callback_query) {
+exports.callbackReply = function(callback_query) {
   response = "Thank you " + 
               callback_query.from.first_name + 
               " for voting " + 

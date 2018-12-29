@@ -14,6 +14,7 @@ app.use(bodyParser.json());
 // lightrail
 // error handling
 // unit tests (jest?)
+// authn p14c
 
 function errorHandler(_error) {
   console.log("ERROR : " + _error);
@@ -41,7 +42,7 @@ if (process.argv[2] == "local") {
 
 function sendResponse(response, value) {
   if (value) {
-    response.send(value)
+    response.send(DB.prepareForSend(value));
   } else {
     response.sendStatus(404);
   }
@@ -77,7 +78,7 @@ app.route('/settings')
   p.then((value) => {sendResponse(response, value)});
 })
 .post(function(request, response, next) {
-  p = DB.insertSetting(request.body);
+  p = DB.addSetting(request.body);
   p.then((value) => {sendResponse(response, value)});
 });
 
@@ -103,9 +104,26 @@ app.route('/misc/:setting')
 
 app.route('/misc')
 .post(function(request, response, next) {
-  p = DB.insertMisc(request.body);
+  p = DB.addMisc(request.body);
   p.then((value) => {sendResponse(response, value)});
 });
+
+app.route('/games')
+.get(function(request, response, next) {
+  p = DB.getGames();
+  p.then((value) => {sendResponse(response, value)});
+})
+.post(function(request, response, next) {
+  p = DB.addGame(request.body);
+  p.then((value) => {sendResponse(response, value)});
+});
+
+app.route('/games/:id')
+.delete(function(request, response, next) {
+  p = DB.deleteGame(request.params.id);
+  p.then((value) => {sendResponse(response, value)});
+});
+
 
 app.route('/poll')
 .post(function(request, response, next) {
@@ -116,7 +134,8 @@ app.route('/poll')
 app.route('/check')
 .post(function(request, response, next) {
   p = MGR.check();
-  response.sendStatus(200);
+  p.then((value) => {sendResponse(response, value)});
+  // response.sendStatus(200);
 });
 
 app.route('/webhook')
