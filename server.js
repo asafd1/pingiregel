@@ -124,6 +124,22 @@ app.route('/games/:id')
   p.then((value) => {sendResponse(response, value)});
 });
 
+app.route('/players')
+.get(function(request, response, next) {
+  p = DB.getPlayers();
+  p.then((value) => {sendResponse(response, value)});
+})
+.post(function(request, response, next) {
+  p = DB.addPlayer(request.body);
+  p.then((value) => {sendResponse(response, value)});
+});
+
+app.route('/players/:id')
+.delete(function(request, response, next) {
+  p = DB.deletePlayer(request.params.id);
+  p.then((value) => {sendResponse(response, value)});
+});
+
 
 app.route('/poll')
 .post(function(request, response, next) {
@@ -140,7 +156,7 @@ app.route('/check')
 
 app.route('/webhook')
 .post(function(request, response, next) {
-  console.log("webhook");
+  console.log("webhook: " + request.path);
   p = MGR.handleCallback(request.body);
   response.sendStatus(200);
 });

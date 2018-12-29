@@ -68,7 +68,7 @@ exports.addMisc = function (setting) {
 // PLAYERS
 exports.getPlayer = function (id) {
     console.log("getting player by id: " + id);
-    return db.collection("players").findOne({_id:getObjectID(id)});
+    return db.collection("players").findOne({_id:parseInt(id)});
 }
 
 exports.getPlayers = function () {
@@ -83,7 +83,12 @@ exports.addPlayer = function (player) {
 
 exports.updatePlayer = function (id, player) {
     console.log("updating player by id: " + id);
-    return db.collection("players").updateOne({_id:getObjectID(id)}, { $set: player });
+    return db.collection("players").updateOne({_id:parseInt(id)}, { $set: player });
+}
+
+exports.deletePlayer = function (id) {
+    console.log("delete player by id: " + id);
+    return db.collection("players").deleteOne({_id:parseInt(id)});
 }
 
 // GAMES
