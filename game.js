@@ -27,21 +27,26 @@ function getDefaultVenue() {
 }
 
 // Constructor
-function Game(_time, _venue) {
-    if (typeof _time === 'undefined') {
+function Game(time, venue, lastSent, status) {
+    if (!time) {
         this.time = getDefaultTime();
     } else {
-        this.time = _time;
+        this.time = time;
     }
 
-    if (typeof _venue === 'undefined') {
+    if (!venue) {
         this.venue = getDefaultVenue();
     } else {
-        this.venue = _venue;
+        this.venue = venue;
     }
     
-    this.lastSent = null;
-    this.status = "open";
+    this.id = null;
+    this.lastSent = lastSent;
+    this.status = status ? status : "open";
+
+    this.getId = function () {
+        return this.id;
+    }
 
     this.getDayOfWeek = function () {
         return daysOfWeek[this.time.getDay()];
@@ -51,5 +56,11 @@ function Game(_time, _venue) {
         return hour = (this.time.getHours() + (this.time.getTimezoneOffset() / 60)) + ":00";
     }
 }
+
+Game.createGameFromDb = function (game) {
+    g = new Game(game.time, game.venue, game.lastSent, game.status);
+    g.id = game._id;
+    return g;
+} 
 
 module.exports = Game;

@@ -1,6 +1,7 @@
 var BOT = require("./bot");
 var DB;
 var Game = require("./game");
+var Player = require("./player");
 var _ = require("underscore");
 
 exports.init = function (db) {
@@ -38,7 +39,7 @@ function createGameIfNeeded(games) {
         return game;
     }
 
-    return currentGame;
+    return Game.createGameFromDb(currentGame);
 }
 
 exports.getCurrentGame = function () {
@@ -46,11 +47,18 @@ exports.getCurrentGame = function () {
 }
 
 exports.pollCurrentGame = function () {
-    exports.getCurrentGame().then(sendPoll(game));
+    exports.getCurrentGame().then((game) => sendPoll(game));
+}
+
+function updatePoll(gameId, results, messageId) {
+    DB.getGame(gameId).then((g) => {
+        game = Game.createGameFromDb(g);
+        BOT.sendPoll(game.getId(), game.getDayOfWeek(), game.getHour(), game.venue.title, results, messageId);
+    });
 }
 
 function sendPoll(game) {
-    BOT.sendPoll(game.getDayOfWeek(), game.getHour(), game.venue.title);
+    BOT.sendPoll(game.getId(), game.getDayOfWeek(), game.getHour(), game.venue.title);
 }
 
 function needResend(game) {
@@ -72,7 +80,47 @@ exports.check = function () {
     return exports.getCurrentGame().then((game) => handleGame(game));
 }
 
+function getNewResults(gameId, players, from, vote) {
+    var results = _.groupBy(players, "vote");
+    var p = _.find(players, (player) => {return player._id == from.id});
+    var player;
+    if (!p) {
+        player = new Player (from.id, from.first_name, from.last_name);
+        player.setVote(gameId, vote);
+        player.setJoinedAt(new Date());
+        DB.addPlayer(player);
+    } else {
+        player = Player.createPlayerFromDb(p);
+        oldVote = player.getVote();
+        results[oldVote] = _.reject(results[oldVote], (p) => {return p._id == player.getId()});
+        if (oldVote != vote) {
+            player.setVote(gameId, vote);
+            DB.updatePlayer(player.getId(), player);
+        }
+    }
+    if (!results[vote]) {
+        results[vote] = [];
+    }
+    results[vote].push(player);
+
+    return results;
+}
+
+function handleVote (gameId, from, vote) {
+    return DB.getPlayers().then((players) => {
+        return getNewResults(gameId, players, from, vote);
+    });
+}
+
 exports.handleCallback = function (requestBody) {
-    BOT.callbackReply(requestBody.callback_query);
+    callbackQuery = requestBody.callback_query;
+    if (callbackQuery.data.startsWith("poll")) {
+        var parts = callbackQuery.data.split(".");
+        var gameId = parts[1];
+        var vote = parts[2];
+        BOT.callbackReply(callbackQuery, vote);
+        p = handleVote(gameId, callbackQuery.from, vote);
+        p.then((results) => {updatePoll(gameId, results, callbackQuery.message.message_id)});;
+    }
   }
   
