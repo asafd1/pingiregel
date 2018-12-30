@@ -55,11 +55,15 @@ function Game(time, venue, lastSent, status) {
     this.getHour = function () {
         return hour = (this.time.getHours() + (this.time.getTimezoneOffset() / 60)) + ":00";
     }
+
+    this.setId = function (_id) {
+        this.id = _id.toHexString();
+    }
 }
 
 Game.createGameFromDb = function (game) {
     g = new Game(game.time, game.venue, game.lastSent, game.status);
-    g.id = game._id;
+    g.setId(game._id);
     return g;
 } 
 
