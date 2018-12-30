@@ -63,6 +63,9 @@ function shouldVerifyPassword(request) {
 }
 
 app.use(function (request, response, next) {
+  if (request.path.startsWith("webhook")) {
+    dumpWebhook(request);
+  }
   if (shouldVerifyPassword(request)) {
     if (verifyPassword(request, response, next)) {
       next();
@@ -167,9 +170,6 @@ function dumpWebhook(request) {
 }
 
 app.route('/webhook')
-.all(function(request, response, next) {
-  dumpWebhook(request);
-})
 .post(function(request, response, next) {
   if (request.body.callback_query) {
     p = MGR.handleCallback(request.body);

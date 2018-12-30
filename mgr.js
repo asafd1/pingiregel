@@ -21,15 +21,15 @@ function createGameIfNeeded(games) {
         return game;
     }
 
-    var currentGame = _.max(games, (game) => {return game._id.generationTime});
+    var currentGame = _.max(games, (game) => {return parseInt(game.getId(), 16)});
     
     _.each(games, (game, index, games) => { 
         now = new Date();
-        if (game.time < now || game._id.generationTime != currentGame._id.generationTime) {
+        if (game.time < now || game.getId() != currentGame.getId()) {
             game.status = "closed";
-            console.log("closing old game: " + game._id);
+            console.log("closing old game: " + game.getId());
             
-            DB.updateGame(game._id, game);
+            DB.updateGame(game.getId(), game);
         }
     });
     games = _.filter(games, (game) => { return game.status == "open" });
@@ -39,11 +39,13 @@ function createGameIfNeeded(games) {
         return game;
     }
 
-    return Game.createGameFromDb(currentGame);
+    return currentGame;
 }
 
 exports.getCurrentGame = function () {
-    return DB.getGames("open").then((games) => createGameIfNeeded(games));
+    return DB.getGames("open").then((games) => {
+        return createGameIfNeeded(games);
+    });
 }
 
 exports.pollCurrentGame = function () {
@@ -51,8 +53,7 @@ exports.pollCurrentGame = function () {
 }
 
 function updatePoll(gameId, results, messageId) {
-    DB.getGame(gameId).then((g) => {
-        game = Game.createGameFromDb(g);
+    DB.getGame(gameId).then((game) => {
         BOT.sendPoll(game.getId(), game.getDayOfWeek(), game.getHour(), game.venue.title, results, messageId);
     });
 }
@@ -71,7 +72,7 @@ function handleGame(game) {
     if (!game.lastSent || needResend(game)) {
         sendPoll(game);
         game.lastSent = now;
-        DB.updateGame(game._id, game);
+        DB.updateGame(game.getId(), game);
     }
     return game;
 }

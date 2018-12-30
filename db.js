@@ -1,6 +1,7 @@
 var assert = require('assert');
 const MongoClient = require('mongodb').MongoClient;
 const ObjectID = require('mongodb').ObjectID;
+var _ = require("underscore");
 
 const DBNAME = "pingiregel";
 var mongouri = "mongodb://localhost:27017/";
@@ -13,7 +14,7 @@ exports.prepareForSend = function (response) {
     return response;
 };
 
-function getObjectID (id) {
+function toObjectId (id) {
     if (typeof id === ObjectID) {
         return id;
     }
@@ -92,6 +93,8 @@ exports.deletePlayer = function (id) {
 }
 
 // GAMES
+var Game = require("./game"); // this needs to be generalized (supply object mappers to the db module)
+
 exports.getGames = function (_status, _after) {
     console.log(`getting games (by status=${_status} and after=${_after})`);
     var opts = {};
@@ -101,25 +104,29 @@ exports.getGames = function (_status, _after) {
     if (_after) {
         opts.time = { $gt : _after };
     }
-    return db.collection("games").find(opts).toArray();
+    return db.collection("games").find(opts).toArray().then((docs) => _.map(docs,(doc)=>Game.createGameFromDb(doc)));
 }
 
 exports.getGame = function (id) {
     console.log("getting game by id: " + id);
-    return db.collection("games").findOne({_id:getObjectID(id)});
+    return db.collection("games").findOne({_id:toObjectId(id)}).then((doc)=>{
+        return Game.createGameFromDb(doc)
+    });
 }
 
 exports.addGame = function (game) {
     console.log("adding game: " + game);
-    return db.collection("games").insertOne(game);
+    p = db.collection("games").insertOne(game);
+    game.setId(game._id); // the _id is being set synchronously
+    return p;
 }
 
 exports.updateGame = function (id, game) {
     console.log("updating game by id: " + id);
-    return db.collection("games").updateOne({_id:getObjectID(id)}, { $set: game });
+    return db.collection("games").updateOne({_id:toObjectId(id)}, { $set: game });
 }
 
 exports.deleteGame = function (id) {
     console.log("deleting game by id: " + id);
-    return db.collection("games").deleteOne({_id:getObjectID(id)});
+    return db.collection("games").deleteOne({_id:toObjectId(id)});
 }
