@@ -30,6 +30,11 @@ exports.connect = function () {
 }
 
 // SETTINGS
+exports.makeSetting = function (_key, _value) {
+    return { key : _key,
+             value : _value };
+}
+
 exports.getSetting = function (_key) {
     console.log("getting setting: " + _key);
     return db.collection("settings").findOne({key:_key});
@@ -110,7 +115,10 @@ exports.getGames = function (_status, _after) {
 exports.getGame = function (id) {
     console.log("getting game by id: " + id);
     return db.collection("games").findOne({_id:toObjectId(id)}).then((doc)=>{
-        return Game.createGameFromDb(doc)
+        if (doc) {
+            return Game.createGameFromDb(doc)
+        }
+        return null;
     });
 }
 

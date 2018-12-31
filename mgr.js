@@ -113,8 +113,7 @@ function handleVote (gameId, from, vote) {
     });
 }
 
-exports.handleCallback = function (requestBody) {
-    callbackQuery = requestBody.callback_query;
+function handleCallbackQuery(callbackQuery) {
     if (callbackQuery.data.startsWith("poll")) {
         var parts = callbackQuery.data.split(".");
         var gameId = parts[1];
@@ -123,5 +122,30 @@ exports.handleCallback = function (requestBody) {
         p = handleVote(gameId, callbackQuery.from, vote);
         p.then((results) => {updatePoll(gameId, results, callbackQuery.message.message_id)});;
     }
-  }
+}
+
+function updateAlreadySeen(updateId) {
+    while (!DB) {}
+    return DB.getMisc("updateId").then((value) => {
+        if (value && value >= updateId) {
+            return true;
+        }
+        DB.addMisc(DB.makeSetting("updateId", updateId));
+        return false;
+    })
+}
+
+exports.handleCallback = function (requestBody) {
+    updateAlreadySeen(requestBody.update_id).then((seen) => {
+        if (seen) {
+            return;
+        }
+        if (requestBody.callback_query) {
+            handleCallbackQuery(requestBody.callback_query);
+        }
+        if (requestBody.message) {
+            BOT.handleMessage(requestBody);
+        }
+    })
+}
   
