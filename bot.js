@@ -15,11 +15,11 @@ process.env.NTBA_FIX_350 = 1;
 function setWebHook(bot) {
   DB.getSetting("baseUrl").then((doc) => {
     url = doc.value + "/webhook";
-    console.log("webhook url="+url);
     var opts = {};
     if (fs.existsSync(certificatePath)) {
       opts = { certificate : certificatePath };
     }
+    console.log(`setting webhook ${url} with certificate ${opts.certificate}`);
     bot.setWebHook(url, opts, { contentType: "application/octet-stream" } );
   }).catch((e) => {
     console.log(e);
