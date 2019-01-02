@@ -9,6 +9,8 @@ const token = process.argv[2];
 const baseUrl = process.argv[3];
 
 function addKey(collection, _key, _value) {
+    console.log("add key " + _key);
+    
     collection.insertOne({key:_key, value:_value}).then(console.log(_key + " = " + _value));
 }
 
@@ -23,15 +25,24 @@ function init(db) {
     });
 }
 
+function connect () {
+    MongoClient.connect(mongoServerInstance.getMongouri(), function(err, mongodb) {
+        console.log(err);
+        
+        db = mongodb.db(DBNAME);
+        console.log("connected to db: "+ db.databaseName);
+        init(db);
+        }
+    );
+}
+
 mongoServerInstance.start((err, config) => {
-    assert.equal(null, err);
+    if (err) {
+        console.log(err);
+    }
     console.log("HOST " + config.host);
     console.log("PORT " + config.port);
+
+    connect();
 });
 
-MongoClient.connect(mongoServerInstance.getMongouri(), function(err, mongodb) {
-    db = mongodb.db(DBNAME);
-    console.log("connected to db: "+ db.databaseName);
-    init(db);
-    }
-);
