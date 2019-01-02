@@ -30,7 +30,6 @@ mongoServerInstance.start((err, config) => {
 });
 
 MongoClient.connect(mongoServerInstance.getMongouri(), function(err, mongodb) {
-    assert.equal(null, err);
     db = mongodb.db(DBNAME);
     console.log("connected to db: "+ db.databaseName);
     init(db);
