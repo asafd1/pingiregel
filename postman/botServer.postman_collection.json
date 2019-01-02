@@ -1,0 +1,378 @@
+{
+	"info": {
+		"_postman_id": "bf9ed1a5-8d05-4f3e-8e54-360dd147ca14",
+		"name": "botServer",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "getAllSettings",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{app}}/settings",
+					"host": [
+						"{{app}}"
+					],
+					"path": [
+						"settings"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getAllGames",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{app}}/games",
+					"host": [
+						"{{app}}"
+					],
+					"path": [
+						"games"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getAllPlayers",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{app}}/players",
+					"host": [
+						"{{app}}"
+					],
+					"path": [
+						"players"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "check",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "password",
+						"type": "text",
+						"value": "{{password}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{app}}/check",
+					"host": [
+						"{{app}}"
+					],
+					"path": [
+						"check"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "setWebhook",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "password",
+						"value": "{{password}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \n\t\"key\": \"baseUrl\",\n    \"value\": \"https://cf45b00c.ngrok.io\"\n}"
+				},
+				"url": {
+					"raw": "{{app}}/settings/",
+					"host": [
+						"{{app}}"
+					],
+					"path": [
+						"settings",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "deleteWebhook",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "password",
+						"type": "text",
+						"value": "{{password}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{app}}/settings/baseUrl",
+					"host": [
+						"{{app}}"
+					],
+					"path": [
+						"settings",
+						"baseUrl"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "deleteGame",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "password",
+						"type": "text",
+						"value": "{{password}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{app}}/games/5c27a841a6ec1b28d45b5e82",
+					"host": [
+						"{{app}}"
+					],
+					"path": [
+						"games",
+						"5c27a841a6ec1b28d45b5e82"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "deletePlayer",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "password",
+						"type": "text",
+						"value": "{{password}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{app}}/players/509453115",
+					"host": [
+						"{{app}}"
+					],
+					"path": [
+						"players",
+						"509453115"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "addToken",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "password",
+						"type": "text",
+						"value": "{{password}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \n\t\"key\": \"token\",\n    \"value\": \"761179774:AAGuO9b2j794j8mbv2xAJRwBobSaoMp0PGs\"\n}"
+				},
+				"url": {
+					"raw": "{{app}}/misc/",
+					"host": [
+						"{{app}}"
+					],
+					"path": [
+						"misc",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "sendPoll",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "password",
+						"type": "text",
+						"value": "{{password}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{app}}/poll/",
+					"host": [
+						"{{app}}"
+					],
+					"path": [
+						"poll",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getSetting",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \n\t\"key\": \"baseUrl\",\n    \"value\": \"https://e59c79d2.ngrok.io\"\n}"
+				},
+				"url": {
+					"raw": "{{app}}/settings/baseUrl",
+					"host": [
+						"{{app}}"
+					],
+					"path": [
+						"settings",
+						"baseUrl"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getToken",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "password",
+						"type": "text",
+						"value": "{{password}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \n\t\"key\": \"baseUrl\",\n    \"value\": \"https://e59c79d2.ngrok.io\"\n}"
+				},
+				"url": {
+					"raw": "{{app}}/misc/updateId",
+					"host": [
+						"{{app}}"
+					],
+					"path": [
+						"misc",
+						"updateId"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
