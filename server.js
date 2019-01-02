@@ -49,11 +49,7 @@ function sendResponse(response, value) {
 }
 
 function verifyPassword(request, response, next) {
-  if (!request.headers.password || request.headers.password != CRYPTO.getPassword()) {
-    response.sendStatus(401);
-    return false;
-  }
-  return true;
+  return request.headers.password && request.headers.password == CRYPTO.getPassword();
 }
 
 function shouldVerifyPassword(request) {
@@ -67,13 +63,10 @@ app.use(function (request, response, next) {
   if (request.path.startsWith("/webhook")) {
     dumpWebhook(request);
   }
-  if (shouldVerifyPassword(request)) {
-    if (verifyPassword(request, response, next)) {
-      next();
-    }
-  } else {
-    next();
+  if (shouldVerifyPassword(request) && !verifyPassword(request, response, next)) {
+      response.sendStatus(401);
   }
+  next();
 })
 
 app.route('/settings')
@@ -172,7 +165,7 @@ function dumpWebhook(request) {
 
 app.route('/webhook')
 .post(function(request, response, next) {
-  if (request.body.callback_query) {
+  if (request.body) {
     p = MGR.handleCallback(request.body);
   }
   response.sendStatus(200);
