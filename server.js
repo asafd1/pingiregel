@@ -27,7 +27,7 @@ var MGR = require("./mgr");
 DB.connect().then((db) => MGR.init(db)).catch((error) => errorHandler(error));
 
 if (process.argv[2] == "local") {
-  const port = 80;
+  const port = 8080;
   app.listen(port, () => console.log(`Local app listening on port ${port}!`));
 } else {
   var privateKey = fs.readFileSync( './creds/pingiregel-private.key' );
