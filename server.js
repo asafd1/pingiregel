@@ -63,7 +63,8 @@ function shouldVerifyPassword(request) {
 }
 
 app.use(function (request, response, next) {
-  if (request.path.startsWith("webhook")) {
+  console.log(request.path);
+  if (request.path.startsWith("/webhook")) {
     dumpWebhook(request);
   }
   if (shouldVerifyPassword(request)) {
