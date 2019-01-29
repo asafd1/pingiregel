@@ -52,9 +52,9 @@ exports.pollCurrentGame = function () {
     exports.getCurrentGame().then((game) => sendPoll(game));
 }
 
-function updatePoll(gameId, results, messageId) {
+function updatePoll(gameId, results, messageId, expand) {
     DB.getGame(gameId).then((game) => {
-        BOT.sendPoll(game.getId(), game.getDayOfWeek(), game.getHour(), game.venue.title, results, messageId);
+        BOT.sendPoll(game.getId(), game.getDayOfWeek(), game.getHour(), game.venue.title, results, messageId, expand);
     });
 }
 
@@ -115,12 +115,25 @@ function handleVote (gameId, from, vote) {
 
 function handleCallbackQuery(callbackQuery) {
     if (callbackQuery.data.startsWith("poll")) {
+        console.log(`chat.id=${callbackQuery.message.chat.id} msg.id=${callbackQuery.message.message_id}`);
+        
         var parts = callbackQuery.data.split(".");
         var gameId = parts[1];
-        var vote = parts[2];
-        BOT.callbackReply(callbackQuery, vote);
-        p = handleVote(gameId, callbackQuery.from, vote);
+        var vote = parts.length == 3 ? parts[2] : null;
+        var p;
+        if (vote) {
+            BOT.callbackReply(callbackQuery, vote);
+            p = handleVote(gameId, callbackQuery.from, vote);
+        } else {
+            p = BOT.getResults();
+        }
         p.then((results) => {updatePoll(gameId, results, callbackQuery.message.message_id)});;
+    }
+    if (callbackQuery.data.startsWith("expand") || callbackQuery.data.startsWith("collapse")) {
+        var parts = callbackQuery.data.split(".");
+        var gameId = parts[1];
+        p = BOT.getResults();
+        p.then((results) => {updatePoll(gameId, results, callbackQuery.message.message_id, parts[0]=="expand")});;
     }
 }
 
