@@ -3,6 +3,7 @@ var DB;
 var Game = require("./game");
 var Player = require("./player");
 var _ = require("underscore");
+var logger = require('./logger');
 
 exports.init = function (db) {
     DB = db;
@@ -27,7 +28,7 @@ function createGameIfNeeded(games) {
         now = new Date();
         if (game.time < now || game.getId() != currentGame.getId()) {
             game.status = "closed";
-            console.log("closing old game: " + game.getId());
+            logger.log("closing old game: " + game.getId());
             
             DB.updateGame(game.getId(), game);
         }
@@ -115,7 +116,7 @@ function handleVote (gameId, from, vote) {
 
 function handleCallbackQuery(callbackQuery) {
     if (callbackQuery.data.startsWith("poll")) {
-        console.log(`chat.id=${callbackQuery.message.chat.id} msg.id=${callbackQuery.message.message_id}`);
+        logger.log(`chat.id=${callbackQuery.message.chat.id} msg.id=${callbackQuery.message.message_id}`);
         
         var parts = callbackQuery.data.split(".");
         var gameId = parts[1];

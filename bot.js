@@ -1,7 +1,8 @@
 const TelegramBot = require('node-telegram-bot-api');
 var fs = require('fs');
 var _ = require("underscore");
-
+var cron = require('node-cron');
+var logger = require('./logger');
 
 var WAZE_DEEP_LINK = "https://www.waze.com/ul?ll=32.13038646%2C34.83800054&navigate=yes&zoom=17";
 var TARGET_NUMBER_OF_PLAYERS = 9;
@@ -23,10 +24,10 @@ function setWebHook(bot) {
     if (fs.existsSync(certificatePath)) {
       opts = { certificate : certificatePath };
     }
-    console.log(`setting webhook ${url} with certificate ${opts.certificate}`);
+    logger.log(`setting webhook ${url} with certificate ${opts.certificate}`);
     bot.setWebHook(url, opts, { contentType: "application/octet-stream" } );
   }).catch((e) => {
-    console.log(e);
+    logger.log(e);
     throw e;
   });
   return bot;
@@ -34,7 +35,7 @@ function setWebHook(bot) {
 
 function initBot(token) {
   bot = new TelegramBot(token, {polling: false}); 
-  bot.getMe().then((me)=>console.log("Bot started: " + me.username));
+  bot.getMe().then((me)=>logger.log("Bot started: " + me.username));
   
   return bot;
 }
@@ -102,6 +103,12 @@ function registerCommands(bot) {
   bot.onText(/\/what/, whatCommand);  
 }
 
+function schedule() {
+  cron.schedule('* * * * *', () => {
+    logger.log('running a task every minute');
+  });  
+}
+
 exports.init = function (db) {
   DB = db;
   DB.getMisc("token")
@@ -109,7 +116,7 @@ exports.init = function (db) {
   .then((doc) => initBot(doc.value))
   .then((bot) => realizeGroupChatId(bot))
   .then((bot) => setWebHook(bot))
-  .then((bot) => registerCommands(bot));
+  .then((bot) => schedule(bot));
 }
 
 function sendMessage(text, inline_keyboard) {
@@ -205,7 +212,7 @@ function getPollKeyboard(gameId, results, expand) {
 }
 
 exports.sendPoll = function (gameId, day, hour, title, results, messageId, expand) {
-  console.log(messageId ? "updating poll" : "sending poll");
+  logger.log(messageId ? "updating poll" : "sending poll");
 
   inline_keyboard = getPollKeyboard(gameId, results, expand);
   
@@ -235,7 +242,7 @@ exports.callbackReply = function(callback_query, vote) {
 }
 
 exports.handleMessage = function (requestBody) {
-  console.log(requestBody.message);
+  logger.log(requestBody.message);
   // commands are handled according to registerCommands
   bot.processUpdate(requestBody);
 }
