@@ -148,7 +148,7 @@ app.route('/poll')
 
 app.route('/check')
 .post(function(request, response, next) {
-  p = MGR.check();
+  p = MGR.checkGame();
   p.then((value) => {sendResponse(response, value)});
   // response.sendStatus(200);
 });

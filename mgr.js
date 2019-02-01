@@ -4,10 +4,18 @@ var Game = require("./game");
 var Player = require("./player");
 var _ = require("underscore");
 var logger = require('./logger');
+var cron = require('node-cron');
 
+function schedule() {
+    cron.schedule('0 * * * *', () => {
+        checkGame();
+    });  
+}
+  
 exports.init = function (db) {
     DB = db;
     BOT.init(db);
+    schedule();
     return this;
 }
 
@@ -55,12 +63,12 @@ exports.pollCurrentGame = function () {
 
 function updatePoll(gameId, results, messageId, expand) {
     DB.getGame(gameId).then((game) => {
-        BOT.sendPoll(game.getId(), game.getDayOfWeek(), game.getHour(), game.venue.title, results, messageId, expand);
+        BOT.sendPoll(game, results, messageId, expand);
     });
 }
 
 function sendPoll(game) {
-    BOT.sendPoll(game.getId(), game.getDayOfWeek(), game.getHour(), game.venue.title);
+    BOT.sendPoll(game);
 }
 
 function needResend(game) {
@@ -78,8 +86,13 @@ function handleGame(game) {
     return game;
 }
 
-exports.check = function () {
+function checkGame() {
+    logger.log("checking game status");
     return exports.getCurrentGame().then((game) => handleGame(game));
+}
+
+exports.checkGame = function () {
+    return checkGame();
 }
 
 function getNewResults(gameId, players, from, vote) {

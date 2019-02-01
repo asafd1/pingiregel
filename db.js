@@ -117,7 +117,9 @@ exports.getGame = function (id) {
     logger.log("getting game by id: " + id);
     return db.collection("games").findOne({_id:toObjectId(id)}).then((doc)=>{
         if (doc) {
-            return Game.createGameFromDb(doc)
+            var game = Game.createGameFromDb(doc);
+            logger.log("found game: " + JSON.stringify(game, null, 2));
+            return game;
         }
         return null;
     });

@@ -1,10 +1,9 @@
 const TelegramBot = require('node-telegram-bot-api');
 var fs = require('fs');
 var _ = require("underscore");
-var cron = require('node-cron');
 var logger = require('./logger');
 
-var WAZE_DEEP_LINK = "https://www.waze.com/ul?ll=32.13038646%2C34.83800054&navigate=yes&zoom=17";
+var WAZE_DEEP_LINK = "https://www.waze.com/ul?ll=<LAT>%2C<LONG>&navigate=yes&zoom=17";
 var TARGET_NUMBER_OF_PLAYERS = 9;
 
 const certificatePath = "./creds/pingiregel-public.pem";
@@ -103,20 +102,13 @@ function registerCommands(bot) {
   bot.onText(/\/what/, whatCommand);  
 }
 
-function schedule() {
-  cron.schedule('* * * * *', () => {
-    logger.log('running a task every minute');
-  });  
-}
-
 exports.init = function (db) {
   DB = db;
   DB.getMisc("token")
   .then((value) => {return value;})
   .then((doc) => initBot(doc.value))
   .then((bot) => realizeGroupChatId(bot))
-  .then((bot) => setWebHook(bot))
-  .then((bot) => schedule(bot));
+  .then((bot) => setWebHook(bot));
 }
 
 function sendMessage(text, inline_keyboard) {
@@ -148,7 +140,7 @@ function editMessageReplyMarkup(messageId, inline_keyboard) {
 }
 
 function shouldShowNavigationButton(results) {
-  return results && results.yes.length >= TARGET_NUMBER_OF_PLAYERS;
+  return results && results.yes && results.yes.length >= TARGET_NUMBER_OF_PLAYERS;
 }
 
 function getNames(players) {
@@ -163,7 +155,7 @@ function getNames(players) {
   return names.length > 0 ? names.join() : "אף אחד";
 }
 
-function getPollKeyboard(gameId, results, expand) {
+function getPollKeyboard(game, results, expand) {
   var yesText = "כן";
   var maybeText = "אולי";
   var noText = "לא";
@@ -182,9 +174,9 @@ function getPollKeyboard(gameId, results, expand) {
 
   inline_keyboard = [];
   inline_keyboard.push(
-    [{"text": yesText, "callback_data":`poll.${gameId}.yes`},
-     {"text": maybeText, "callback_data":`poll.${gameId}.maybe`},
-     {"text": noText, "callback_data":`poll.${gameId}.no`}]);
+    [{"text": yesText, "callback_data":`poll.${game.getId()}.yes`},
+     {"text": maybeText, "callback_data":`poll.${game.getId()}.maybe`},
+     {"text": noText, "callback_data":`poll.${game.getId()}.no`}]);
   
   if (totalVotes.length > 0) {
     if (expand) {
@@ -196,27 +188,30 @@ function getPollKeyboard(gameId, results, expand) {
     
     if (expand) {
       inline_keyboard.push(
-        [{"text": "צמצם לי", "callback_data":`collapse.${gameId}`}]);
+        [{"text": "צמצם לי", "callback_data":`collapse.${game.getId()}`}]);
     } else {
       inline_keyboard.push(
-        [{"text": "פרט לי", "callback_data":`expand.${gameId}`}]);
+        [{"text": "פרט לי", "callback_data":`expand.${game.getId()}`}]);
     }
   }
 
   if (shouldShowNavigationButton(results)) {
+    var url = WAZE_DEEP_LINK;
+    url = url.replace("<LAT>", game.venue.location.latitude);
+    url = url.replace("<LONG>", game.venue.location.longtitude);
     inline_keyboard.push(
-        [{"text": "נווט אותי", "url": WAZE_DEEP_LINK}]);
+        [{"text": "נווט אותי", "url": url}]);
   }
 
   return inline_keyboard;
 }
 
-exports.sendPoll = function (gameId, day, hour, title, results, messageId, expand) {
+exports.sendPoll = function (game, results, messageId, expand) {
   logger.log(messageId ? "updating poll" : "sending poll");
 
-  inline_keyboard = getPollKeyboard(gameId, results, expand);
+  inline_keyboard = getPollKeyboard(game, results, expand);
   
-  var question = `מגיע לכדורגל ביום ${day} ב-${hour} ב${title}?`;
+  var question = `מגיע לכדורגל ביום ${game.getDayOfWeek()} ב-${game.getHour()} ב${game.venue.title}?`;
   if (!messageId) {
     sendMessage(question, inline_keyboard);
   } else {
