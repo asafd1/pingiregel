@@ -4,7 +4,7 @@ var _ = require("underscore");
 var logger = require('./logger');
 
 var WAZE_DEEP_LINK = "https://www.waze.com/ul?ll=<LAT>%2C<LONG>&navigate=yes&zoom=17";
-var TARGET_NUMBER_OF_PLAYERS = 9;
+var config = {};
 
 const certificatePath = "./creds/pingiregel-public.pem";
 var pingiregelGroupChatId = "-1001428218098"; // default, MyTestBot group chat id
@@ -46,13 +46,6 @@ function realizeGroupChatId(bot) {
     }
   });
   return bot;
-}
-
-exports.getResults = function() {
-  return DB.getPlayers().then((players) => {
-    var results = _.groupBy(players, "vote");
-    return results;
-  });
 }
 
 // /setcommands
@@ -102,13 +95,15 @@ function registerCommands(bot) {
   bot.onText(/\/what/, whatCommand);  
 }
 
-exports.init = function (db) {
+exports.init = function (db, config) {
   DB = db;
   DB.getMisc("token")
   .then((value) => {return value;})
   .then((doc) => initBot(doc.value))
   .then((bot) => realizeGroupChatId(bot))
   .then((bot) => setWebHook(bot));
+
+  this.config = config;
 }
 
 function sendMessage(text, inline_keyboard) {
@@ -140,7 +135,7 @@ function editMessageReplyMarkup(messageId, inline_keyboard) {
 }
 
 function shouldShowNavigationButton(results) {
-  return results && results.yes && results.yes.length >= TARGET_NUMBER_OF_PLAYERS;
+  return results && results.yes && results.yes.length >= config.targetNumberOfPlayer;
 }
 
 function getNames(players) {
@@ -217,6 +212,16 @@ exports.sendPoll = function (game, results, messageId, expand) {
   } else {
     editMessageReplyMarkup(messageId, inline_keyboard);
   }
+}
+
+exports.sendReminder = function (game, usernames) {
+  var text = "נא להצביע";
+  text += " ";
+
+  for (username in usernames) {
+    text += " @" + username;
+  }
+  sendMessage(text);
 }
 
 exports.callbackReply = function(callback_query, vote) {

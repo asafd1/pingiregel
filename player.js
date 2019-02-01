@@ -1,8 +1,9 @@
 var _ = require("underscore");
 
 // Constructor
-function Player(id, firstname, lastname, vote, historicVotes, joinedAt) {
-    this._id = id;    
+function Player(id, username, firstname, lastname, vote, historicVotes, joinedAt) {
+    this._id = id;
+    this.username = username;
     this.firstname = firstname;
     this.lastname = lastname;
     this.vote = vote;
@@ -31,7 +32,7 @@ function Player(id, firstname, lastname, vote, historicVotes, joinedAt) {
 }
 
 Player.createPlayerFromDb = function (player) {
-    return new Player(player._id, player.firstname, player.lastname, player.vote, player.historicVotes, player.joinedAt);
+    return new Player(player._id, player.username, player.firstname, player.lastname, player.vote, player.historicVotes, player.joinedAt);
 } 
 
 module.exports = Player;

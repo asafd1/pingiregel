@@ -5,6 +5,17 @@ var Player = require("./player");
 var _ = require("underscore");
 var logger = require('./logger');
 var cron = require('node-cron');
+var TARGET_NUMBER_OF_PLAYERS = 9;
+
+const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"];
+
+function isMorning(now) {
+    return now.getHours() == 9;
+}
+
+function isEvening(now) {
+    return now.getHours() == 21;
+}
 
 function schedule() {
     cron.schedule('0 * * * *', () => {
@@ -14,7 +25,7 @@ function schedule() {
   
 exports.init = function (db) {
     DB = db;
-    BOT.init(db);
+    BOT.init(db, {targetNumberOfPlayers:TARGET_NUMBER_OF_PLAYERS});
     schedule();
     return this;
 }
@@ -75,14 +86,78 @@ function needResend(game) {
     return false;
 }
 
+
+function sendGameFirstTime(game) {
+    if (now.getDay() == daysOfWeek.indexOf("ראשון") && isMorning(now)) {
+        if (!game.lastSent) {
+            sendPoll(game);
+            game.lastSent = now;
+            DB.updateGame(game.getId(), game);
+        }
+    }
+}
+
+function getUsernames(players) {
+    usernames = _.map(players, (player) => {
+      username = player.username;
+      if (player.lastname) {
+      return username;
+    });
+  
+    return usernames;
+  }
+  
+function hasTargetPlayers(results) {
+    return results && results.yes && results.yes >= TARGET_NUMBER_OF_PLAYERS;
+}
+
+function getNotVoted(results) {
+    if (results && results.nill && results.nill > 0) {
+        return getUsernames(results.nill);
+    }
+    return null;
+}
+
+function checkAndRemind(game, results) {
+    if (!hasTargetPlayers(results)) {
+        if (getNotVoted(results) != null) {
+            BOT.sendReminder(game, getNotVoted(results));
+        }
+    }
+}
+
+function remindGame(game) {
+    var results = getResults();
+    var now = new Date();
+    switch(now.getDay()) {
+        case daysOfWeek.indexOf("ראשון"):
+            if (isEvening(now)) {
+                checkAndRemind(game, results);        
+            }
+            break;
+        case daysOfWeek.indexOf("שני"):
+        case daysOfWeek.indexOf("שלישי"):
+            if (isMorning(now) || isEvening(now)) {
+                checkAndRemind(game, results);        
+            }
+            break;
+    }
+
+    if (now.getDay() == daysOfWeek.indexOf("ראשון") && isEvening(now)) {
+        checkAndRemind(results);
+    }
+}
+
+function resetGame(game) {
+    
+}
+
 function handleGame(game) {
     now = new Date();
 
-    if (!game.lastSent || needResend(game)) {
-        sendPoll(game);
-        game.lastSent = now;
-        DB.updateGame(game.getId(), game);
-    }
+    sendGameFirstTime(game);
+    remindGame(game);
+    resetGame(game);
     return game;
 }
 
@@ -100,7 +175,7 @@ function getNewResults(gameId, players, from, vote) {
     var p = _.find(players, (player) => {return player._id == from.id});
     var player;
     if (!p) {
-        player = new Player (from.id, from.first_name, from.last_name);
+        player = new Player (from.id, from.username, from.first_name, from.last_name);
         player.setVote(gameId, vote);
         player.setJoinedAt(new Date());
         DB.addPlayer(player);
@@ -127,6 +202,13 @@ function handleVote (gameId, from, vote) {
     });
 }
 
+function getResults () {
+    return DB.getPlayers().then((players) => {
+      var results = _.groupBy(players, "vote");
+      return results;
+    });
+}
+
 function handleCallbackQuery(callbackQuery) {
     if (callbackQuery.data.startsWith("poll")) {
         logger.log(`chat.id=${callbackQuery.message.chat.id} msg.id=${callbackQuery.message.message_id}`);
@@ -139,14 +221,14 @@ function handleCallbackQuery(callbackQuery) {
             BOT.callbackReply(callbackQuery, vote);
             p = handleVote(gameId, callbackQuery.from, vote);
         } else {
-            p = BOT.getResults();
+            p = getResults();
         }
         p.then((results) => {updatePoll(gameId, results, callbackQuery.message.message_id)});;
     }
     if (callbackQuery.data.startsWith("expand") || callbackQuery.data.startsWith("collapse")) {
         var parts = callbackQuery.data.split(".");
         var gameId = parts[1];
-        p = BOT.getResults();
+        p = getResults();
         p.then((results) => {updatePoll(gameId, results, callbackQuery.message.message_id, parts[0]=="expand")});;
     }
 }
