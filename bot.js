@@ -107,14 +107,12 @@ exports.init = function (db, config) {
 }
 
 function sendMessage(text, inline_keyboard) {
-  var opts = {};
+  var opts = { parse_mode : "Markdown" };
   if (inline_keyboard) {
-    opts = {
-      reply_markup: JSON.stringify({
+    opts.reply_markup = JSON.stringify({
         inline_keyboard,
         resize_keyboard : true,
-      })
-    };
+      });
   }
   bot.sendMessage(pingiregelGroupChatId, text, opts);
 
@@ -214,13 +212,16 @@ exports.sendPoll = function (game, results, messageId, expand) {
   }
 }
 
-exports.sendReminder = function (game, usernames) {
+exports.sendReminder = function (game, players) {
   var text = "נא להצביע";
   text += " ";
 
-  for (username in usernames) {
-    text += " @" + username;
-  }
+  mentions = _.map(players, (player) => {
+    return `[${player.firstname}](tg://user?id=${player.getId()})`;
+  });
+
+  text += mentions.join();
+
   sendMessage(text);
 }
 

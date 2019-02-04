@@ -17,7 +17,11 @@ function Player(id, username, firstname, lastname, vote, historicVotes, joinedAt
     this.getVote = function () {
         return this.vote;
     }
-    
+
+    this.resetVote = function () {
+        this.vote = "nill";
+    }
+
     this.setVote = function (gameId, vote) {
         this.vote = vote;
         if (!this.historicVotes) {

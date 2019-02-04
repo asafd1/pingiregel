@@ -9,6 +9,11 @@ var TARGET_NUMBER_OF_PLAYERS = 9;
 
 const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"];
 
+function getNow() {
+    // return new Date("2019-02-10 21:00:00");
+    return new Date();
+}
+
 function isMorning(now) {
     return now.getHours() == 9;
 }
@@ -34,9 +39,23 @@ exports.getBot = function () {
     return BOT;
 }
 
+function resetPlayer(player) {
+    player.resetVote();
+    DB.updatePlayer(player.getId(), player);
+}
+
+function resetPlayers() {
+    DB.getPlayers().then((players) => {
+        _.forEach(players, (player) => {
+            resetPlayer(player);
+        })
+    });
+}
+
 function createGameIfNeeded(games) {
     if (_.isEmpty(games)) {
         var game = new Game();
+        resetPlayers();
         DB.addGame(game);
         return game;
     }
@@ -44,7 +63,7 @@ function createGameIfNeeded(games) {
     var currentGame = _.max(games, (game) => {return parseInt(game.getId(), 16)});
     
     _.each(games, (game, index, games) => { 
-        now = new Date();
+        now = getNow();
         if (game.time < now || game.getId() != currentGame.getId()) {
             game.status = "closed";
             logger.log("closing old game: " + game.getId());
@@ -52,9 +71,11 @@ function createGameIfNeeded(games) {
             DB.updateGame(game.getId(), game);
         }
     });
+
     games = _.filter(games, (game) => { return game.status == "open" });
     if (_.isEmpty(games)) {
         var game = new Game();
+        resetPlayers();
         DB.addGame(game);
         return game;
     }
@@ -88,32 +109,20 @@ function needResend(game) {
 
 
 function sendGameFirstTime(game) {
-    if (now.getDay() == daysOfWeek.indexOf("ראשון") && isMorning(now)) {
-        if (!game.lastSent) {
-            sendPoll(game);
-            game.lastSent = now;
-            DB.updateGame(game.getId(), game);
-        }
+    if (!game.lastSent) {
+        sendPoll(game);
+        game.lastSent = now;
+        DB.updateGame(game.getId(), game);
     }
 }
-
-function getUsernames(players) {
-    usernames = _.map(players, (player) => {
-      username = player.username;
-      if (player.lastname) {
-      return username;
-    });
-  
-    return usernames;
-  }
   
 function hasTargetPlayers(results) {
     return results && results.yes && results.yes >= TARGET_NUMBER_OF_PLAYERS;
 }
 
 function getNotVoted(results) {
-    if (results && results.nill && results.nill > 0) {
-        return getUsernames(results.nill);
+    if (results && results.nill && results.nill.length > 0) {
+        return results.nill;
     }
     return null;
 }
@@ -126,38 +135,30 @@ function checkAndRemind(game, results) {
     }
 }
 
-function remindGame(game) {
-    var results = getResults();
-    var now = new Date();
-    switch(now.getDay()) {
-        case daysOfWeek.indexOf("ראשון"):
-            if (isEvening(now)) {
-                checkAndRemind(game, results);        
-            }
-            break;
-        case daysOfWeek.indexOf("שני"):
-        case daysOfWeek.indexOf("שלישי"):
-            if (isMorning(now) || isEvening(now)) {
-                checkAndRemind(game, results);        
-            }
-            break;
-    }
-
-    if (now.getDay() == daysOfWeek.indexOf("ראשון") && isEvening(now)) {
-        checkAndRemind(results);
-    }
-}
-
-function resetGame(game) {
-    
+function remindGame(game, now) {
+    var p = getResults();
+    p.then((results) => {
+        switch(now.getDay()) {
+            case daysOfWeek.indexOf("ראשון"):
+                if (isEvening(now)) {
+                    checkAndRemind(game, results);        
+                }
+                break;
+            case daysOfWeek.indexOf("שני"):
+            case daysOfWeek.indexOf("שלישי"):
+                if (isMorning(now) || isEvening(now)) {
+                    checkAndRemind(game, results);        
+                }
+                break;
+        }
+    });
 }
 
 function handleGame(game) {
-    now = new Date();
+    now = getNow();
 
     sendGameFirstTime(game);
-    remindGame(game);
-    resetGame(game);
+    remindGame(game, now);
     return game;
 }
 
@@ -177,7 +178,7 @@ function getNewResults(gameId, players, from, vote) {
     if (!p) {
         player = new Player (from.id, from.username, from.first_name, from.last_name);
         player.setVote(gameId, vote);
-        player.setJoinedAt(new Date());
+        player.setJoinedAt(getNow());
         DB.addPlayer(player);
     } else {
         player = Player.createPlayerFromDb(p);

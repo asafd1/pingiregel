@@ -3,6 +3,8 @@ const MongoClient = require('mongodb').MongoClient;
 const ObjectID = require('mongodb').ObjectID;
 var _ = require("underscore");
 var logger = require('./logger');
+var Game = require("./game"); // this needs to be generalized (supply object mappers to the db module)
+var Player = require("./player"); // this needs to be generalized (supply object mappers to the db module)
 
 const DBNAME = "pingiregel";
 var mongouri = "mongodb://localhost:27017/";
@@ -75,12 +77,18 @@ exports.addMisc = function (setting) {
 // PLAYERS
 exports.getPlayer = function (id) {
     logger.log("getting player by id: " + id);
-    return db.collection("players").findOne({_id:parseInt(id)});
+    return db.collection("players").findOne({_id:parseInt(id)}).then((doc) => {
+        if (doc) {
+            var player = Player.createPlayerFromDb(doc);
+            logger.log("found player: " + JSON.stringify(player, null, 2));
+            return player;
+        }
+    });
 }
 
 exports.getPlayers = function () {
     logger.log("getting all players");
-    return db.collection("players").find({}).toArray();
+    return db.collection("players").find({}).toArray().then((docs) => _.map(docs,(doc)=>Player.createPlayerFromDb(doc)));
 }
 
 exports.addPlayer = function (player) {
@@ -89,7 +97,7 @@ exports.addPlayer = function (player) {
 }
 
 exports.updatePlayer = function (id, player) {
-    logger.log("updating player by id: " + id);
+    logger.log("updating player: " + JSON.stringify(player, null, 2));
     return db.collection("players").updateOne({_id:parseInt(id)}, { $set: player });
 }
 
@@ -99,8 +107,6 @@ exports.deletePlayer = function (id) {
 }
 
 // GAMES
-var Game = require("./game"); // this needs to be generalized (supply object mappers to the db module)
-
 exports.getGames = function (_status, _after) {
     logger.log(`getting games (by status=${_status} and after=${_after})`);
     var opts = {};
@@ -126,7 +132,7 @@ exports.getGame = function (id) {
 }
 
 exports.addGame = function (game) {
-    logger.log("adding game: " + game);
+    logger.log("adding game: " + JSON.stringify(game, null, 2));
     p = db.collection("games").insertOne(game);
     game.setId(game._id); // the _id is being set synchronously
     return p;

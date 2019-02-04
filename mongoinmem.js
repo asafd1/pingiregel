@@ -3,6 +3,8 @@ const MongoClient = require('mongodb').MongoClient;
 const MongoInMemory = require('mongo-in-memory');
 const DBNAME = "pingiregel";
 
+// To start mongo: node mongoinmem.js <token> <url> &
+
 var mongoServerInstance = new MongoInMemory(27017);
 
 const token = process.argv[2];
