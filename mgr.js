@@ -23,6 +23,7 @@ function isEvening(now) {
 }
 
 function schedule() {
+    checkGame();
     cron.schedule('0 * * * *', () => {
         checkGame();
     });  
@@ -93,26 +94,33 @@ exports.pollCurrentGame = function () {
     exports.getCurrentGame().then((game) => sendPoll(game));
 }
 
-function updatePoll(gameId, results, messageId, expand) {
-    DB.getGame(gameId).then((game) => {
-        BOT.sendPoll(game, results, messageId, expand);
-    });
+function updatePoll(game, results, expand) {
+    BOT.sendPoll(game, results, expand);
 }
 
 function sendPoll(game) {
-    BOT.sendPoll(game);
+    messageId = BOT.sendPoll(game);
+    game.setMessageId(messageId);
+    DB.updateGame(game.getId(), game);
 }
 
-function needResend(game) {
-    return false;
-}
-
-
-function sendGameFirstTime(game) {
+function sendGame(game, now) {
     if (!game.lastSent) {
         sendPoll(game);
         game.lastSent = now;
         DB.updateGame(game.getId(), game);
+        return;
+    }
+
+    if (now.getDay() >= daysOfWeek.indexOf("רביעי")) {
+        var p = getResults();
+        p.then((results) => {
+            if ((!hasTargetPlayers(results) && !game.getAllowFriends()) || 
+                (hasTargetPlayers(results) && game.getAllowFriends())) {
+                    game.setAllowFriends(!game.getAllowFriends());
+                    updatePoll(game, results);
+            }
+        })
     }
 }
   
@@ -157,7 +165,7 @@ function remindGame(game, now) {
 function handleGame(game) {
     now = getNow();
 
-    sendGameFirstTime(game);
+    sendGame(game, now);
     remindGame(game, now);
     return game;
 }
@@ -224,13 +232,18 @@ function handleCallbackQuery(callbackQuery) {
         } else {
             p = getResults();
         }
-        p.then((results) => {updatePoll(gameId, results, callbackQuery.message.message_id)});;
+
+        DB.getGame(gameId).then((game) => {
+            p.then((results) => {updatePoll(game, results)});;
+        }
     }
     if (callbackQuery.data.startsWith("expand") || callbackQuery.data.startsWith("collapse")) {
         var parts = callbackQuery.data.split(".");
         var gameId = parts[1];
         p = getResults();
-        p.then((results) => {updatePoll(gameId, results, callbackQuery.message.message_id, parts[0]=="expand")});;
+        DB.getGame(gameId).then((game) => {
+            p.then((results) => {updatePoll(game, results, expand = (parts[0]=="expand"))});
+        }
     }
 }
 

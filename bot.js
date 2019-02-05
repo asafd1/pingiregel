@@ -115,7 +115,6 @@ function sendMessage(text, inline_keyboard) {
       });
   }
   bot.sendMessage(pingiregelGroupChatId, text, opts);
-
 }
 
 function editMessageReplyMarkup(messageId, inline_keyboard) {
@@ -148,7 +147,7 @@ function getNames(players) {
   return names.length > 0 ? names.join() : "אף אחד";
 }
 
-function getPollKeyboard(game, results, expand) {
+function getPollKeyboard(game, results, expand, friendsButtons) {
   var yesText = "כן";
   var maybeText = "אולי";
   var noText = "לא";
@@ -171,6 +170,14 @@ function getPollKeyboard(game, results, expand) {
      {"text": maybeText, "callback_data":`poll.${game.getId()}.maybe`},
      {"text": noText, "callback_data":`poll.${game.getId()}.no`}]);
   
+  if (friendsButtons) {
+    var plusFriendText  = "+חבר";
+    var minusFriendText = "-חבר"
+
+    inline_keyboard[0].push({"text": plusFriendText, "callback_data":`poll.${game.getId()}.plus1`})
+    inline_keyboard[0].push({"text": minusFriendText, "callback_data":`poll.${game.getId()}.minus1`})
+  }
+
   if (totalVotes.length > 0) {
     if (expand) {
       inline_keyboard.push(
@@ -199,16 +206,18 @@ function getPollKeyboard(game, results, expand) {
   return inline_keyboard;
 }
 
-exports.sendPoll = function (game, results, messageId, expand) {
-  logger.log(messageId ? "updating poll" : "sending poll");
+exports.sendPoll = function (game, results, expand) {
+  logger.log(game.getMessageId() ? "updating poll" : "sending poll");
 
-  inline_keyboard = getPollKeyboard(game, results, expand);
+  inline_keyboard = getPollKeyboard(game, results, expand, game.getAllowFriends());
   
   var question = `מגיע לכדורגל ביום ${game.getDayOfWeek()} ב-${game.getHour()} ב${game.venue.title}?`;
   if (!messageId) {
-    sendMessage(question, inline_keyboard);
+    p = sendMessage(question, inline_keyboard);
+    return p.then((message) => {return message.message_id;});
   } else {
     editMessageReplyMarkup(messageId, inline_keyboard);
+    return messageId;
   }
 }
 

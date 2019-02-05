@@ -43,6 +43,8 @@ function Game(time, venue, lastSent, status) {
     this.id = null;
     this.lastSent = lastSent;
     this.status = status ? status : "open";
+    this.messageId = null;
+    this.allowFriends = false;
 
     this.getId = function () {
         return this.id;
@@ -58,6 +60,22 @@ function Game(time, venue, lastSent, status) {
 
     this.setId = function (_id) {
         this.id = _id.toHexString();
+    }
+
+    this.setMessageId = function (messageId) {
+        this.messageId = messageId;
+    }
+
+    this.getMessageId = function () {
+        return this.messageId;
+    }
+
+    this.setAllowFriends = function (allow) {
+        this.allowFriends = allow;
+    }
+
+    this.getAllowFriends = function () {
+        return this.allowFriends;
     }
 }
 
