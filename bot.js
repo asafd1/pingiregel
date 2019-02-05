@@ -1,10 +1,10 @@
 const TelegramBot = require('node-telegram-bot-api');
 var fs = require('fs');
 var _ = require("underscore");
+var logger = require('./logger');
 
-
-var WAZE_DEEP_LINK = "https://www.waze.com/ul?ll=32.13038646%2C34.83800054&navigate=yes&zoom=17";
-var TARGET_NUMBER_OF_PLAYERS = 9;
+var WAZE_DEEP_LINK = "https://www.waze.com/ul?ll=<LAT>%2C<LONG>&navigate=yes&zoom=17";
+var config = {};
 
 const certificatePath = "./creds/pingiregel-public.pem";
 var pingiregelGroupChatId = "-1001428218098"; // default, MyTestBot group chat id
@@ -23,10 +23,10 @@ function setWebHook(bot) {
     if (fs.existsSync(certificatePath)) {
       opts = { certificate : certificatePath };
     }
-    console.log(`setting webhook ${url} with certificate ${opts.certificate}`);
+    logger.log(`setting webhook ${url} with certificate ${opts.certificate}`);
     bot.setWebHook(url, opts, { contentType: "application/octet-stream" } );
   }).catch((e) => {
-    console.log(e);
+    logger.log(e);
     throw e;
   });
   return bot;
@@ -34,7 +34,7 @@ function setWebHook(bot) {
 
 function initBot(token) {
   bot = new TelegramBot(token, {polling: false}); 
-  bot.getMe().then((me)=>console.log("Bot started: " + me.username));
+  bot.getMe().then((me)=>logger.log("Bot started: " + me.username));
   
   return bot;
 }
@@ -46,13 +46,6 @@ function realizeGroupChatId(bot) {
     }
   });
   return bot;
-}
-
-exports.getResults = function() {
-  return DB.getPlayers().then((players) => {
-    var results = _.groupBy(players, "vote");
-    return results;
-  });
 }
 
 // /setcommands
@@ -102,25 +95,24 @@ function registerCommands(bot) {
   bot.onText(/\/what/, whatCommand);  
 }
 
-exports.init = function (db) {
+exports.init = function (db, config) {
   DB = db;
   DB.getMisc("token")
   .then((value) => {return value;})
   .then((doc) => initBot(doc.value))
   .then((bot) => realizeGroupChatId(bot))
-  .then((bot) => setWebHook(bot))
-  .then((bot) => registerCommands(bot));
+  .then((bot) => setWebHook(bot));
+
+  this.config = config;
 }
 
 function sendMessage(text, inline_keyboard) {
-  var opts = {};
+  var opts = { parse_mode : "Markdown" };
   if (inline_keyboard) {
-    opts = {
-      reply_markup: JSON.stringify({
+    opts.reply_markup = JSON.stringify({
         inline_keyboard,
         resize_keyboard : true,
-      })
-    };
+      });
   }
   bot.sendMessage(pingiregelGroupChatId, text, opts);
 
@@ -141,7 +133,7 @@ function editMessageReplyMarkup(messageId, inline_keyboard) {
 }
 
 function shouldShowNavigationButton(results) {
-  return results && results.yes.length >= TARGET_NUMBER_OF_PLAYERS;
+  return results && results.yes && results.yes.length >= config.targetNumberOfPlayer;
 }
 
 function getNames(players) {
@@ -156,7 +148,7 @@ function getNames(players) {
   return names.length > 0 ? names.join() : "אף אחד";
 }
 
-function getPollKeyboard(gameId, results, expand) {
+function getPollKeyboard(game, results, expand) {
   var yesText = "כן";
   var maybeText = "אולי";
   var noText = "לא";
@@ -175,9 +167,9 @@ function getPollKeyboard(gameId, results, expand) {
 
   inline_keyboard = [];
   inline_keyboard.push(
-    [{"text": yesText, "callback_data":`poll.${gameId}.yes`},
-     {"text": maybeText, "callback_data":`poll.${gameId}.maybe`},
-     {"text": noText, "callback_data":`poll.${gameId}.no`}]);
+    [{"text": yesText, "callback_data":`poll.${game.getId()}.yes`},
+     {"text": maybeText, "callback_data":`poll.${game.getId()}.maybe`},
+     {"text": noText, "callback_data":`poll.${game.getId()}.no`}]);
   
   if (totalVotes.length > 0) {
     if (expand) {
@@ -189,32 +181,48 @@ function getPollKeyboard(gameId, results, expand) {
     
     if (expand) {
       inline_keyboard.push(
-        [{"text": "צמצם לי", "callback_data":`collapse.${gameId}`}]);
+        [{"text": "צמצם לי", "callback_data":`collapse.${game.getId()}`}]);
     } else {
       inline_keyboard.push(
-        [{"text": "פרט לי", "callback_data":`expand.${gameId}`}]);
+        [{"text": "פרט לי", "callback_data":`expand.${game.getId()}`}]);
     }
   }
 
   if (shouldShowNavigationButton(results)) {
+    var url = WAZE_DEEP_LINK;
+    url = url.replace("<LAT>", game.venue.location.latitude);
+    url = url.replace("<LONG>", game.venue.location.longtitude);
     inline_keyboard.push(
-        [{"text": "נווט אותי", "url": WAZE_DEEP_LINK}]);
+        [{"text": "נווט אותי", "url": url}]);
   }
 
   return inline_keyboard;
 }
 
-exports.sendPoll = function (gameId, day, hour, title, results, messageId, expand) {
-  console.log(messageId ? "updating poll" : "sending poll");
+exports.sendPoll = function (game, results, messageId, expand) {
+  logger.log(messageId ? "updating poll" : "sending poll");
 
-  inline_keyboard = getPollKeyboard(gameId, results, expand);
+  inline_keyboard = getPollKeyboard(game, results, expand);
   
-  var question = `מגיע לכדורגל ביום ${day} ב-${hour} ב${title}?`;
+  var question = `מגיע לכדורגל ביום ${game.getDayOfWeek()} ב-${game.getHour()} ב${game.venue.title}?`;
   if (!messageId) {
     sendMessage(question, inline_keyboard);
   } else {
     editMessageReplyMarkup(messageId, inline_keyboard);
   }
+}
+
+exports.sendReminder = function (game, players) {
+  var text = "נא להצביע";
+  text += " ";
+
+  mentions = _.map(players, (player) => {
+    return `[${player.firstname}](tg://user?id=${player.getId()})`;
+  });
+
+  text += mentions.join();
+
+  sendMessage(text);
 }
 
 exports.callbackReply = function(callback_query, vote) {
@@ -235,7 +243,7 @@ exports.callbackReply = function(callback_query, vote) {
 }
 
 exports.handleMessage = function (requestBody) {
-  console.log(requestBody.message);
+  logger.log(requestBody.message);
   // commands are handled according to registerCommands
   bot.processUpdate(requestBody);
 }

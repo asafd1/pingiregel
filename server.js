@@ -2,6 +2,8 @@ var express = require('express');
 var app = express();
 var fs = require('fs');
 var https = require('https');
+var logger = require('./logger');
+
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -17,7 +19,7 @@ app.use(bodyParser.json());
 // authn p14c
 
 function errorHandler(_error) {
-  console.log("ERROR : " + _error);
+  logger.log("ERROR : " + _error);
 }
 
 var DB = require("./db");
@@ -28,7 +30,7 @@ DB.connect().then((db) => MGR.init(db)).catch((error) => errorHandler(error));
 
 if (process.argv[2] == "local") {
   const port = 8080;
-  app.listen(port, () => console.log(`Local app listening on port ${port}!`));
+  app.listen(port, () => logger.log(`Local app listening on port ${port}!`));
 } else {
   var privateKey = fs.readFileSync( './creds/pingiregel-private.key' );
   var certificate = fs.readFileSync( './creds/pingiregel-public.pem' );
@@ -37,7 +39,7 @@ if (process.argv[2] == "local") {
   https.createServer({
       key: privateKey,
       cert: certificate
-  }, app).listen(port, () => console.log(`App listening on port ${port}!`));
+  }, app).listen(port, () => logger.log(`App listening on port ${port}!`));
 }
 
 function sendResponse(response, value) {
@@ -59,7 +61,7 @@ function shouldVerifyPassword(request) {
 }
 
 app.use(function (request, response, next) {
-  console.log(request.path);
+  logger.log(request.path);
   if (request.path.startsWith("/webhook")) {
     dumpWebhook(request);
   }
@@ -146,7 +148,7 @@ app.route('/poll')
 
 app.route('/check')
 .post(function(request, response, next) {
-  p = MGR.check();
+  p = MGR.checkGame();
   p.then((value) => {sendResponse(response, value)});
   // response.sendStatus(200);
 });
@@ -160,7 +162,7 @@ function dumpWebhook(request) {
   } else {
     msg += "misc: " + request.method + " " + JSON.stringify(request.body);
   }
-  console.log(msg);
+  logger.log(msg);
 }
 
 app.route('/webhook')

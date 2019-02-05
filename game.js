@@ -18,8 +18,8 @@ function getDefaultTime() {
 function getDefaultVenue() {
     return venue = {
         location : {
-            longtitude : 34.835400,
-            latitude : 32.138170
+            longtitude : 34.83800054,
+            latitude : 32.13038646
         },
         title	: "מרכז הטניס",
         address	: "דרך הטניס 6, רמת השרון"
