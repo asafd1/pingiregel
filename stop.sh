@@ -1,1 +1,3 @@
+echo Stopping...
 sudo pkill node
+echo Stopped
