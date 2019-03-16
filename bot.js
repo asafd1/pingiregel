@@ -131,24 +131,25 @@ function sendMessage(text, inline_keyboard) {
   return p;
 }
 
-function editMessageReplyMarkup(messageId, inline_keyboard) {
-  var opts = {};
+function editMessage(messageId, text, inline_keyboard) {
+  var opts = { parse_mode : "Markdown" };
+  opts.chat_id = pingiregelGroupChatId;
+  opts.message_id =  messageId;
+
   if (inline_keyboard) {
-    opts = {
-      reply_markup: JSON.stringify({
+    opts.reply_markup = JSON.stringify({
         inline_keyboard,
         resize_keyboard : true,
         selective: true
-      })
-    };
-
-    inline_keyboard_str = JSON.stringify(inline_keyboard);
-    logger.log(`updating message. chat_id = '${pingiregelGroupChatId} 'messageId = '${messageId}' 'inline_keyboard' = '${inline_keyboard_str}'`);
-    bot.editMessageReplyMarkup({inline_keyboard}, {chat_id: pingiregelGroupChatId, message_id: messageId}).
-    catch((error) => {
-      logger.log(error)
     });
-  }
+  };
+
+  inline_keyboard_str = JSON.stringify(inline_keyboard);
+  logger.log(`updating message. chat_id = '${pingiregelGroupChatId} 'messageId = '${messageId}' 'inline_keyboard' = '${inline_keyboard_str}'`);
+  bot.editMessageText(text, opts).
+  catch((error) => {
+    logger.log(error)
+  });
 
   return new Promise(() => {return messageId});
 }
@@ -163,7 +164,10 @@ function getNames(players) {
     if (player.lastname) {
       name +=  " " + player.lastname;
     }
-    return name;
+    if (player.getId().indexOf(".friend") > 0) {
+      return " " + name;
+    }
+    return ` [${name}](tg://user?id=${player.getId()})`;
   });
 
   return names.length > 0 ? names.join() : "אף אחד";
@@ -192,14 +196,7 @@ function getPollKeyboard(game, results, expand, friendsButtons) {
      {"text": maybeText, "callback_data":`poll.${game.getId()}.maybe`},
      {"text": noText, "callback_data":`poll.${game.getId()}.no`}]);
   
-  if (totalVotes.length > 0) {
-    if (expand) {
-      inline_keyboard.push(
-        [{"text": getNames(results.yes), "callback_data":`none`},
-        {"text": getNames(results.maybe), "callback_data":`none`},
-        {"text": getNames(results.no), "callback_data":`none`}]);
-    }
-    
+  if (totalVotes.length > 0) {    
     if (friendsButtons) {
       var plusFriendText  = "+חבר";
       var minusFriendText = "-חבר"
@@ -209,10 +206,7 @@ function getPollKeyboard(game, results, expand, friendsButtons) {
         {"text": minusFriendText, "callback_data":`poll.${game.getId()}.minus1`}]);
     }
   
-    if (expand) {
-      inline_keyboard.push(
-        [{"text": "צמצם לי", "callback_data":`collapse.${game.getId()}`}]);
-    } else {
+    if (!expand) {
       inline_keyboard.push(
         [{"text": "פרט לי", "callback_data":`expand.${game.getId()}`}]);
     }
@@ -229,18 +223,36 @@ function getPollKeyboard(game, results, expand, friendsButtons) {
   return inline_keyboard;
 }
 
+function getText(game, results, expand) {
+  var text = `מגיע לכדורגל ביום ${game.getDayOfWeek()} ב-${game.getHour()} ב${game.venue.title}?`;
+  if (expand) {
+    text += "\n";
+    lengthYes = results.yes ? `(${results.yes.length})` : "";
+    lengthMaybe = results.maybe ? `(${results.maybe.length})` : "";
+    lengthNo = results.no ? `(${results.no.length})` : "";
+    text += "\n*" + `באים ${lengthYes}:* `;
+    text += getNames(results.yes);
+    text += "\n" + `אולי ${lengthMaybe}: `;
+    text += getNames(results.maybe);
+    text += "\n" + `לא ${lengthNo}: `;
+    text += getNames(results.no);
+    text += "\n\n";
+  }
+  return text;
+}
+
 exports.sendPoll = function (game, results, expand) {
   var messageId = game.getMessageId();
   logger.log(messageId ? "updating poll" : "sending poll");
 
   inline_keyboard = getPollKeyboard(game, results, expand, game.getAllowFriends());
   
-  var question = `מגיע לכדורגל ביום ${game.getDayOfWeek()} ב-${game.getHour()} ב${game.venue.title}?`;
+  var text = getText(game, results, expand);
   if (!messageId) {
-    p = sendMessage(question, inline_keyboard);
+    p = sendMessage(text, inline_keyboard);
     return p.then((message) => {return message.message_id;});
   } else {
-    return editMessageReplyMarkup(messageId, inline_keyboard);
+    return editMessage(messageId, text, inline_keyboard);
   }
 }
 
