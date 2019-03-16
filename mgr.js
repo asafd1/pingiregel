@@ -10,7 +10,7 @@ var TARGET_NUMBER_OF_PLAYERS = 9;
 const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"];
 
 function getNow() {
-    // return new Date("2019-02-10 21:00:00");
+//    return new Date("2019-03-21 21:00:00");
     return new Date();
 }
 
@@ -23,7 +23,7 @@ function isEvening(now) {
 }
 
 function schedule() {
-    checkGame();
+    // checkGame();
     cron.schedule('0 * * * *', () => {
         checkGame();
     });  
@@ -41,6 +41,11 @@ exports.getBot = function () {
 }
 
 function resetPlayer(player) {
+    if (player.isFriend()) {
+        DB.deletePlayer(player.getId());
+        return;
+    }
+
     player.resetVote();
     DB.updatePlayer(player.getId(), player);
 }
@@ -84,44 +89,65 @@ function createGameIfNeeded(games) {
     return currentGame;
 }
 
-exports.getCurrentGame = function () {
+exports.getCurrentGame = getCurrentGame;
+
+function getCurrentGame() {
     return DB.getGames("open").then((games) => {
         return createGameIfNeeded(games);
     });
 }
 
-exports.pollCurrentGame = function () {
-    exports.getCurrentGame().then((game) => sendPoll(game));
-}
+// exports.pollCurrentGame = function () {
+//     exports.getCurrentGame().then((game) => sendPoll(game));
+// }
 
 function updatePoll(game, results, expand) {
     BOT.sendPoll(game, results, expand);
 }
 
-function sendPoll(game) {
-    messageId = BOT.sendPoll(game);
+function updateGame(game, messageId, now) {
     game.setMessageId(messageId);
+    if (now && now > 0) {
+        game.setLastSent(now);
+    }
     DB.updateGame(game.getId(), game);
+    return game;
+}
+
+function sendPoll(game, now) {
+    p = BOT.sendPoll(game).then();
+    return p.then((messageId) => {
+        return updateGame(game, messageId, now);
+    });
 }
 
 function sendGame(game, now) {
-    if (!game.lastSent) {
-        sendPoll(game);
-        game.lastSent = now;
-        DB.updateGame(game.getId(), game);
-        return;
+    logger.log(`sendGame. gameId = ${game.getId()}`);
+    var p;
+
+    if (!game.getLastSent()) {
+        game.setMessageId(null);
+        p = sendPoll(game, now);
     }
 
-    if (now.getDay() >= daysOfWeek.indexOf("רביעי")) {
-        var p = getResults();
-        p.then((results) => {
-            if ((!hasTargetPlayers(results) && !game.getAllowFriends()) || 
-                (hasTargetPlayers(results) && game.getAllowFriends())) {
-                    game.setAllowFriends(!game.getAllowFriends());
-                    updatePoll(game, results);
-            }
-        })
+    // sendPoll may update game (lastSend and messageId)
+    if (p == null) {
+        p = getCurrentGame();
     }
+    p.then((game) => {
+        if (now.getDay() >= daysOfWeek.indexOf("רביעי") && 
+            now.getDay() <= daysOfWeek.indexOf("חמישי")) {
+            var p = getResults();
+            p.then((results) => {
+                if ((!hasTargetPlayers(results) && !game.getAllowFriends()) || 
+                    (hasTargetPlayers(results) && game.getAllowFriends())) {
+                        game.setAllowFriends(!game.getAllowFriends());
+                        DB.updateGame(game.getId(), game);
+                        updatePoll(game, results);
+                }
+            })
+        }
+    });
 }
   
 function hasTargetPlayers(results) {
@@ -144,6 +170,8 @@ function checkAndRemind(game, results) {
 }
 
 function remindGame(game, now) {
+    logger.log(`remindGame. gameId = ${game.getId()}`);
+
     var p = getResults();
     p.then((results) => {
         switch(now.getDay()) {
@@ -163,6 +191,7 @@ function remindGame(game, now) {
 }
 
 function handleGame(game) {
+    logger.log(`handleGame. gameId = ${game.getId()}`);
     now = getNow();
 
     sendGame(game, now);
@@ -172,35 +201,75 @@ function handleGame(game) {
 
 function checkGame() {
     logger.log("checking game status");
-    return exports.getCurrentGame().then((game) => handleGame(game));
+    return getCurrentGame().then((game) => handleGame(game));
 }
 
 exports.checkGame = function () {
     return checkGame();
 }
 
-function getNewResults(gameId, players, from, vote) {
-    var results = _.groupBy(players, "vote");
-    var p = _.find(players, (player) => {return player._id == from.id});
-    var player;
-    if (!p) {
-        player = new Player (from.id, from.username, from.first_name, from.last_name);
-        player.setVote(gameId, vote);
+function isFriendVote(vote) {
+    return (vote == "plus1" || vote == "minus1");
+}
+
+function handleFriendVote(gameId, voterPlayer, vote, players, results) {
+    voterPlayer.setFriends(players);
+
+    if (vote == "plus1") {
+        var id = voterPlayer.getNextFriendId();
+        var firstname = voterPlayer.getFirstName() + "'s friend";
+        player = new Player (id, id, firstname, null);
+        player.setVote(gameId, "yes");
         player.setJoinedAt(getNow());
         DB.addPlayer(player);
+        return player;
     } else {
-        player = Player.createPlayerFromDb(p);
-        oldVote = player.getVote();
-        results[oldVote] = _.reject(results[oldVote], (p) => {return p._id == player.getId()});
-        if (oldVote != vote) {
-            player.setVote(gameId, vote);
-            DB.updatePlayer(player.getId(), player);
+        var id = voterPlayer.getLastFriendId();
+        if (id) {
+            DB.deletePlayer(id);
         }
+        results["yes"] = _.reject(results["yes"], (p) => {return p.getId() == id});
+        return null;
     }
-    if (!results[vote]) {
-        results[vote] = [];
+}
+
+function handlePlayerVote(gameId, player, vote, results) {
+    // player = Player.createPlayerFromDb(player);
+    oldVote = player.getVote();
+    if (oldVote) {
+        results[oldVote] = _.reject(results[oldVote], (p) => {return p.getId() == player.getId()});
     }
-    results[vote].push(player);
+
+    if (oldVote != vote) {
+        player.setVote(gameId, vote);
+        DB.updatePlayer(player.getId(), player);
+    }
+
+    return player;
+}
+
+function getNewResults(gameId, players, from, vote) {
+    var results = _.groupBy(players, "vote");
+    var player = _.find(players, (player) => {return player._id == from.id});
+    if (!player) {
+        player = new Player (from.id, from.username, from.first_name, from.last_name);
+        player.setJoinedAt(getNow());
+        DB.addPlayer(player);
+    }
+
+    if (isFriendVote(vote)) {
+        player = handleFriendVote(gameId, player, vote, players, results);
+    } else {
+        player = handlePlayerVote(gameId, player, vote, results);
+    }
+
+    if (player) {
+        if (!results[player.getVote()]) {
+            results[player.getVote()] = [];
+        }
+
+        results[player.getVote()].push(player);
+    }
 
     return results;
 }
@@ -233,17 +302,19 @@ function handleCallbackQuery(callbackQuery) {
             p = getResults();
         }
 
-        DB.getGame(gameId).then((game) => {
-            p.then((results) => {updatePoll(game, results)});;
-        }
+        p.then((results) => DB.getGame(gameId).then((game) => {
+            if (game) {
+                updatePoll(game, results);
+            }
+        }));
     }
     if (callbackQuery.data.startsWith("expand") || callbackQuery.data.startsWith("collapse")) {
         var parts = callbackQuery.data.split(".");
         var gameId = parts[1];
         p = getResults();
-        DB.getGame(gameId).then((game) => {
-            p.then((results) => {updatePoll(game, results, expand = (parts[0]=="expand"))});
-        }
+        p.then((results) => DB.getGame(gameId).then((game) => {
+            updatePoll(game, results, expand = (parts[0]=="expand"))
+        }));
     }
 }
 
@@ -258,15 +329,17 @@ function updateAlreadySeen(updateId) {
     })
 }
 
-exports.handleCallback = function (requestBody) {
+exports.handleWebhook = function (requestBody) {
     updateAlreadySeen(requestBody.update_id).then((seen) => {
         if (seen) {
             return;
         }
         if (requestBody.callback_query) {
+            logger.log(`got callback. chat_instance=${requestBody.callback_query.chat_instance}, update_id=${requestBody.update_id}`);
             handleCallbackQuery(requestBody.callback_query);
         }
         if (requestBody.message) {
+            logger.log(`got message. chat_id=${requestBody.message.chat.id}, update_id=${requestBody.update_id}`);
             BOT.handleMessage(requestBody);
         }
     })

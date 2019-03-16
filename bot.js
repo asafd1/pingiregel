@@ -7,7 +7,7 @@ var WAZE_DEEP_LINK = "https://www.waze.com/ul?ll=<LAT>%2C<LONG>&navigate=yes&zoo
 var config = {};
 
 const certificatePath = "./creds/pingiregel-public.pem";
-var pingiregelGroupChatId = "-1001428218098"; // default, MyTestBot group chat id
+var pingiregelGroupChatId = null;
 
 var DB;
 var bot;
@@ -59,6 +59,8 @@ function realizeGroupChatId(bot) {
 function startCommand(msg, match) {
   if (msg.from.id == 509453115) {
     pingiregelGroupChatId = msg.chat.id;
+    DB.deleteSetting("chatId");
+    DB.addSetting({key:"chatId", value:pingiregelGroupChatId});
   }
   sendMessage(`סבבה, אני אתחיל לשלוח סקר שחקנים כל יום ראשון`);
 }
@@ -101,12 +103,18 @@ exports.init = function (db, config) {
   .then((value) => {return value;})
   .then((doc) => initBot(doc.value))
   .then((bot) => realizeGroupChatId(bot))
-  .then((bot) => setWebHook(bot));
+  .then((bot) => setWebHook(bot))
+  .then((bot) => registerCommands(bot));
 
   this.config = config;
 }
 
 function sendMessage(text, inline_keyboard) {
+  if (!pingiregelGroupChatId) {
+    logger.log("bot not started. can't send message (no chat id)")
+    return new Promise(() => {return 0});
+  }
+
   var opts = { parse_mode : "Markdown" };
   if (inline_keyboard) {
     opts.reply_markup = JSON.stringify({
@@ -114,7 +122,13 @@ function sendMessage(text, inline_keyboard) {
         resize_keyboard : true,
       });
   }
-  bot.sendMessage(pingiregelGroupChatId, text, opts);
+
+  logger.log(`sending message. text = '${text}'`);
+  p = bot.sendMessage(pingiregelGroupChatId, text, opts);
+  p.then((message) => {
+    logger.log(`message sent. messageId=${message.message_id}`);
+  })
+  return p;
 }
 
 function editMessageReplyMarkup(messageId, inline_keyboard) {
@@ -127,8 +141,16 @@ function editMessageReplyMarkup(messageId, inline_keyboard) {
         selective: true
       })
     };
-    bot.editMessageReplyMarkup({inline_keyboard}, {chat_id: pingiregelGroupChatId, message_id: messageId});
+
+    inline_keyboard_str = JSON.stringify(inline_keyboard);
+    logger.log(`updating message. chat_id = '${pingiregelGroupChatId} 'messageId = '${messageId}' 'inline_keyboard' = '${inline_keyboard_str}'`);
+    bot.editMessageReplyMarkup({inline_keyboard}, {chat_id: pingiregelGroupChatId, message_id: messageId}).
+    catch((error) => {
+      logger.log(error)
+    });
   }
+
+  return new Promise(() => {return messageId});
 }
 
 function shouldShowNavigationButton(results) {
@@ -162,7 +184,7 @@ function getPollKeyboard(game, results, expand, friendsButtons) {
     noText = `לא (${votes})`
   }
   
-  var totalVotes = _.map(results, (member) => {member.length});
+  var totalVotes = _.map(results, (member) => {return member.length});
 
   inline_keyboard = [];
   inline_keyboard.push(
@@ -170,14 +192,6 @@ function getPollKeyboard(game, results, expand, friendsButtons) {
      {"text": maybeText, "callback_data":`poll.${game.getId()}.maybe`},
      {"text": noText, "callback_data":`poll.${game.getId()}.no`}]);
   
-  if (friendsButtons) {
-    var plusFriendText  = "+חבר";
-    var minusFriendText = "-חבר"
-
-    inline_keyboard[0].push({"text": plusFriendText, "callback_data":`poll.${game.getId()}.plus1`})
-    inline_keyboard[0].push({"text": minusFriendText, "callback_data":`poll.${game.getId()}.minus1`})
-  }
-
   if (totalVotes.length > 0) {
     if (expand) {
       inline_keyboard.push(
@@ -186,6 +200,15 @@ function getPollKeyboard(game, results, expand, friendsButtons) {
         {"text": getNames(results.no), "callback_data":`none`}]);
     }
     
+    if (friendsButtons) {
+      var plusFriendText  = "+חבר";
+      var minusFriendText = "-חבר"
+  
+      inline_keyboard.push(
+        [{"text": plusFriendText, "callback_data":`poll.${game.getId()}.plus1`},
+        {"text": minusFriendText, "callback_data":`poll.${game.getId()}.minus1`}]);
+    }
+  
     if (expand) {
       inline_keyboard.push(
         [{"text": "צמצם לי", "callback_data":`collapse.${game.getId()}`}]);
@@ -207,7 +230,8 @@ function getPollKeyboard(game, results, expand, friendsButtons) {
 }
 
 exports.sendPoll = function (game, results, expand) {
-  logger.log(game.getMessageId() ? "updating poll" : "sending poll");
+  var messageId = game.getMessageId();
+  logger.log(messageId ? "updating poll" : "sending poll");
 
   inline_keyboard = getPollKeyboard(game, results, expand, game.getAllowFriends());
   
@@ -216,8 +240,7 @@ exports.sendPoll = function (game, results, expand) {
     p = sendMessage(question, inline_keyboard);
     return p.then((message) => {return message.message_id;});
   } else {
-    editMessageReplyMarkup(messageId, inline_keyboard);
-    return messageId;
+    return editMessageReplyMarkup(messageId, inline_keyboard);
   }
 }
 
