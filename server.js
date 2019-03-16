@@ -168,7 +168,7 @@ function dumpWebhook(request) {
 app.route('/webhook')
 .post(function(request, response, next) {
   if (request.body) {
-    p = MGR.handleCallback(request.body);
+    p = MGR.handleWebhook(request.body);
   }
   response.sendStatus(200);
 });

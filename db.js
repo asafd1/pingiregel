@@ -25,7 +25,7 @@ function toObjectId (id) {
 }
 
 exports.connect = function () {
-    return (MongoClient.connect(mongouri, { useNewUrlParser: true }).then((mongodb) => {
+    return (MongoClient.connect(mongouri, { useNewUrlParser: true, autoIndex: false }).then((mongodb) => {
         db = mongodb.db(DBNAME);
         logger.log("connected to db: "+ db.databaseName);
         return this;
@@ -40,7 +40,15 @@ exports.makeSetting = function (_key, _value) {
 
 exports.getSetting = function (_key) {
     logger.log("getting setting: " + _key);
-    return db.collection("settings").findOne({key:_key});
+    p = db.collection("settings").findOne({key:_key});
+    p.then((row)=> {
+        if (row) {
+            logger.log(`got setting. key=${row.key}, value=${row.value}`);
+        } else {
+            logger.log(`setting not found. key=${_key}`);
+        }
+    });
+    return p;
 }
 
 exports.deleteSetting = function (_key) {
@@ -49,7 +57,7 @@ exports.deleteSetting = function (_key) {
 }
 
 exports.addSetting = function (setting) {
-    logger.log("insert setting: " + setting);
+    logger.log(`insert setting. key=${setting.key}, value=${setting.value}`);
     return db.collection("settings").insertOne(setting);
 }
 
@@ -88,7 +96,13 @@ exports.getPlayer = function (id) {
 
 exports.getPlayers = function () {
     logger.log("getting all players");
-    return db.collection("players").find({}).toArray().then((docs) => _.map(docs,(doc)=>Player.createPlayerFromDb(doc)));
+    p = db.collection("players").find({}).toArray();
+    return p.then((docs) => {
+        logger.log(`found ${_.size(docs)} players`);
+        return _.map(docs,(doc) => {
+            return Player.createPlayerFromDb(doc)
+        })
+    });
 }
 
 exports.addPlayer = function (player) {
@@ -98,12 +112,12 @@ exports.addPlayer = function (player) {
 
 exports.updatePlayer = function (id, player) {
     logger.log("updating player: " + JSON.stringify(player, null, 2));
-    return db.collection("players").updateOne({_id:parseInt(id)}, { $set: player });
+    return db.collection("players").updateOne({_id:id}, { $set: player });
 }
 
 exports.deletePlayer = function (id) {
     logger.log("delete player by id: " + id);
-    return db.collection("players").deleteOne({_id:parseInt(id)});
+    return db.collection("players").deleteOne({_id:id});
 }
 
 // GAMES
@@ -140,6 +154,7 @@ exports.addGame = function (game) {
 
 exports.updateGame = function (id, game) {
     logger.log("updating game by id: " + id);
+    logger.log("game updated to: " + JSON.stringify(game));
     return db.collection("games").updateOne({_id:toObjectId(id)}, { $set: game });
 }
 

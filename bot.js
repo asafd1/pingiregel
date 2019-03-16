@@ -7,7 +7,7 @@ var WAZE_DEEP_LINK = "https://www.waze.com/ul?ll=<LAT>%2C<LONG>&navigate=yes&zoo
 var config = {};
 
 const certificatePath = "./creds/pingiregel-public.pem";
-var pingiregelGroupChatId = "-1001428218098"; // default, MyTestBot group chat id
+var pingiregelGroupChatId = null;
 
 var DB;
 var bot;
@@ -59,6 +59,8 @@ function realizeGroupChatId(bot) {
 function startCommand(msg, match) {
   if (msg.from.id == 509453115) {
     pingiregelGroupChatId = msg.chat.id;
+    DB.deleteSetting("chatId");
+    DB.addSetting({key:"chatId", value:pingiregelGroupChatId});
   }
   sendMessage(`סבבה, אני אתחיל לשלוח סקר שחקנים כל יום ראשון`);
 }
@@ -101,12 +103,18 @@ exports.init = function (db, config) {
   .then((value) => {return value;})
   .then((doc) => initBot(doc.value))
   .then((bot) => realizeGroupChatId(bot))
-  .then((bot) => setWebHook(bot));
+  .then((bot) => setWebHook(bot))
+  .then((bot) => registerCommands(bot));
 
   this.config = config;
 }
 
 function sendMessage(text, inline_keyboard) {
+  if (!pingiregelGroupChatId) {
+    logger.log("bot not started. can't send message (no chat id)")
+    return new Promise(() => {return 0});
+  }
+
   var opts = { parse_mode : "Markdown" };
   if (inline_keyboard) {
     opts.reply_markup = JSON.stringify({
@@ -114,22 +122,36 @@ function sendMessage(text, inline_keyboard) {
         resize_keyboard : true,
       });
   }
-  bot.sendMessage(pingiregelGroupChatId, text, opts);
 
+  logger.log(`sending message. text = '${text}'`);
+  p = bot.sendMessage(pingiregelGroupChatId, text, opts);
+  p.then((message) => {
+    logger.log(`message sent. messageId=${message.message_id}`);
+  })
+  return p;
 }
 
-function editMessageReplyMarkup(messageId, inline_keyboard) {
-  var opts = {};
+function editMessage(messageId, text, inline_keyboard) {
+  var opts = { parse_mode : "Markdown" };
+  opts.chat_id = pingiregelGroupChatId;
+  opts.message_id =  messageId;
+
   if (inline_keyboard) {
-    opts = {
-      reply_markup: JSON.stringify({
+    opts.reply_markup = JSON.stringify({
         inline_keyboard,
         resize_keyboard : true,
         selective: true
-      })
-    };
-    bot.editMessageReplyMarkup({inline_keyboard}, {chat_id: pingiregelGroupChatId, message_id: messageId});
-  }
+    });
+  };
+
+  inline_keyboard_str = JSON.stringify(inline_keyboard);
+  logger.log(`updating message. chat_id = '${pingiregelGroupChatId} 'messageId = '${messageId}' 'inline_keyboard' = '${inline_keyboard_str}'`);
+  bot.editMessageText(text, opts).
+  catch((error) => {
+    logger.log(error)
+  });
+
+  return new Promise(() => {return messageId});
 }
 
 function shouldShowNavigationButton(results) {
@@ -142,13 +164,16 @@ function getNames(players) {
     if (player.lastname) {
       name +=  " " + player.lastname;
     }
-    return name;
+    if (player.getId().indexOf(".friend") > 0) {
+      return " " + name;
+    }
+    return ` [${name}](tg://user?id=${player.getId()})`;
   });
 
   return names.length > 0 ? names.join() : "אף אחד";
 }
 
-function getPollKeyboard(game, results, expand) {
+function getPollKeyboard(game, results, expand, friendsButtons) {
   var yesText = "כן";
   var maybeText = "אולי";
   var noText = "לא";
@@ -163,7 +188,7 @@ function getPollKeyboard(game, results, expand) {
     noText = `לא (${votes})`
   }
   
-  var totalVotes = _.map(results, (member) => {member.length});
+  var totalVotes = _.map(results, (member) => {return member.length});
 
   inline_keyboard = [];
   inline_keyboard.push(
@@ -171,18 +196,17 @@ function getPollKeyboard(game, results, expand) {
      {"text": maybeText, "callback_data":`poll.${game.getId()}.maybe`},
      {"text": noText, "callback_data":`poll.${game.getId()}.no`}]);
   
-  if (totalVotes.length > 0) {
-    if (expand) {
+  if (totalVotes.length > 0) {    
+    if (friendsButtons) {
+      var plusFriendText  = "+חבר";
+      var minusFriendText = "-חבר"
+  
       inline_keyboard.push(
-        [{"text": getNames(results.yes), "callback_data":`none`},
-        {"text": getNames(results.maybe), "callback_data":`none`},
-        {"text": getNames(results.no), "callback_data":`none`}]);
+        [{"text": plusFriendText, "callback_data":`poll.${game.getId()}.plus1`},
+        {"text": minusFriendText, "callback_data":`poll.${game.getId()}.minus1`}]);
     }
-    
-    if (expand) {
-      inline_keyboard.push(
-        [{"text": "צמצם לי", "callback_data":`collapse.${game.getId()}`}]);
-    } else {
+  
+    if (!expand) {
       inline_keyboard.push(
         [{"text": "פרט לי", "callback_data":`expand.${game.getId()}`}]);
     }
@@ -199,16 +223,36 @@ function getPollKeyboard(game, results, expand) {
   return inline_keyboard;
 }
 
-exports.sendPoll = function (game, results, messageId, expand) {
+function getText(game, results, expand) {
+  var text = `מגיע לכדורגל ביום ${game.getDayOfWeek()} ב-${game.getHour()} ב${game.venue.title}?`;
+  if (expand) {
+    text += "\n";
+    lengthYes = results.yes ? `(${results.yes.length})` : "";
+    lengthMaybe = results.maybe ? `(${results.maybe.length})` : "";
+    lengthNo = results.no ? `(${results.no.length})` : "";
+    text += "\n*" + `באים ${lengthYes}:* `;
+    text += getNames(results.yes);
+    text += "\n" + `אולי ${lengthMaybe}: `;
+    text += getNames(results.maybe);
+    text += "\n" + `לא ${lengthNo}: `;
+    text += getNames(results.no);
+    text += "\n\n";
+  }
+  return text;
+}
+
+exports.sendPoll = function (game, results, expand) {
+  var messageId = game.getMessageId();
   logger.log(messageId ? "updating poll" : "sending poll");
 
-  inline_keyboard = getPollKeyboard(game, results, expand);
+  inline_keyboard = getPollKeyboard(game, results, expand, game.getAllowFriends());
   
-  var question = `מגיע לכדורגל ביום ${game.getDayOfWeek()} ב-${game.getHour()} ב${game.venue.title}?`;
+  var text = getText(game, results, expand);
   if (!messageId) {
-    sendMessage(question, inline_keyboard);
+    p = sendMessage(text, inline_keyboard);
+    return p.then((message) => {return message.message_id;});
   } else {
-    editMessageReplyMarkup(messageId, inline_keyboard);
+    return editMessage(messageId, text, inline_keyboard);
   }
 }
 

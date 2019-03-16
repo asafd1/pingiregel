@@ -27,7 +27,7 @@ function getDefaultVenue() {
 }
 
 // Constructor
-function Game(time, venue, lastSent, status) {
+function Game(time, venue, lastSent, status, allowFriends, messageId) {
     if (!time) {
         this.time = getDefaultTime();
     } else {
@@ -43,6 +43,8 @@ function Game(time, venue, lastSent, status) {
     this.id = null;
     this.lastSent = lastSent;
     this.status = status ? status : "open";
+    this.messageId = messageId;
+    this.allowFriends = allowFriends ? allowFriends : false;
 
     this.getId = function () {
         return this.id;
@@ -59,10 +61,34 @@ function Game(time, venue, lastSent, status) {
     this.setId = function (_id) {
         this.id = _id.toHexString();
     }
+
+    this.setMessageId = function (messageId) {
+        this.messageId = messageId;
+    }
+
+    this.getMessageId = function () {
+        return this.messageId;
+    }
+
+    this.setAllowFriends = function (allow) {
+        this.allowFriends = allow;
+    }
+
+    this.getAllowFriends = function () {
+        return this.allowFriends;
+    }
+
+    this.setLastSent = function (time) {
+        this.lastSent = time;
+    }
+
+    this.getLastSent = function () {
+        return this.lastSent;
+    }
 }
 
 Game.createGameFromDb = function (game) {
-    g = new Game(game.time, game.venue, game.lastSent, game.status);
+    g = new Game(game.time, game.venue, game.lastSent, game.status, game.allowFriends, game.messageId);
     g.setId(game._id);
     return g;
 } 
