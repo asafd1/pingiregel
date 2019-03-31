@@ -1,4 +1,5 @@
 const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"];
+const IST = 2;
 
 function getDefaultTime() {
     dayOfWeek = 4; // Thursday
@@ -53,7 +54,7 @@ function Game(time, venue, lastSent, status, allowFriends, messageId) {
     }
     
     this.getHour = function () {
-        return hour = (this.time.getHours() + (this.time.getTimezoneOffset() / 60)) + ":00";
+        return hour = (this.time.getHours() + (this.time.getTimezoneOffset() / 60) + IST) + ":00";
     }
 
     this.setId = function (_id) {

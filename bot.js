@@ -280,6 +280,10 @@ exports.callbackReply = function(callback_query, vote) {
     case "no":
       response = "מקווה שתשנה את דעתך";
       break;
+    case "plus1":
+    case "minus1":
+      response = "תודה";
+      break;
   }
   response += " " + callback_query.from.first_name;
   bot.answerCallbackQuery(callback_query.id, response);
