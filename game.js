@@ -2,13 +2,11 @@ const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמי�
 
 function getDefaultTime() {
     dayOfWeek = 4; // Thursday
-    hour = 19; // 19:00
+    hour = 17; // 17:00 UTC, 19:00 IST
 
     var resultDate = new Date();
     resultDate.setDate(resultDate.getDate() + (7 + dayOfWeek - resultDate.getDay()) % 7);
-    hour -= resultDate.getTimezoneOffset() / 60;
-    
-    resultDate.setHours(hour);
+    resultDate.setUTCHours(hour);
     resultDate.setMinutes(0);
     resultDate.setSeconds(0);
 
@@ -40,14 +38,14 @@ function Game(time, venue, lastSent, status, allowFriends, messageId) {
         this.venue = venue;
     }
     
-    this.id = null;
+    this._id = (this.time.getFullYear() * 10000) + ((this.time.getMonth()+1) * 100) + (this.time.getDate());
     this.lastSent = lastSent;
     this.status = status ? status : "open";
     this.messageId = messageId;
-    this.allowFriends = allowFriends ? allowFriends : false;
+    this.allowFriends = allowFriends ? allowFriends : true;
 
     this.getId = function () {
-        return this.id;
+        return this._id;
     }
 
     this.getDayOfWeek = function () {
@@ -59,7 +57,7 @@ function Game(time, venue, lastSent, status, allowFriends, messageId) {
     }
 
     this.setId = function (_id) {
-        this.id = _id.toHexString();
+        this._id = _id;
     }
 
     this.setMessageId = function (messageId) {
