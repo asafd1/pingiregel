@@ -48,8 +48,8 @@ function Player(id, username, firstname, lastname, vote, historicVotes, joinedAt
         return this.friends;
     }
 
-    this.isFriend = function (voterPlayer) {
-        return (this._id.startsWith(voterPlayer.getId() + ".friend"));
+    this.isFriend = function () {
+        return (this._id.indexOf(".friend") > 0);
     }
     
     this.setFriends = function (players) {

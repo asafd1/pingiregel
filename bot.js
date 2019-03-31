@@ -39,6 +39,14 @@ function initBot(token) {
   return bot;
 }
 
+exports.setGroupChatId = function (msg) {
+  if (msg.from.id == 509453115) {
+    pingiregelGroupChatId = msg.chat.id;
+    DB.deleteSetting("chatId");
+    DB.addSetting({key:"chatId", value:pingiregelGroupChatId});
+  }
+}
+
 function realizeGroupChatId(bot) {
   DB.getSetting("chatId").then((d) => {
     if (d && d.value) {
@@ -48,54 +56,46 @@ function realizeGroupChatId(bot) {
   return bot;
 }
 
-// /setcommands
-// test - קצת עזרה לא תזיק
-// start - תתחיל אותי
-// who - ?מי מגיע
-// when - ?מתי המשחק
-// where - ?איפה המשחק
-// what - ?איפה המשחק? מתי? מי מגיע
+// function startCommand(msg, match) {
+//   if (msg.from.id == 509453115) {
+//     pingiregelGroupChatId = msg.chat.id;
+//     DB.deleteSetting("chatId");
+//     DB.addSetting({key:"chatId", value:pingiregelGroupChatId});
+//   }
+//   sendMessage(`סבבה, אני אתחיל לשלוח סקר שחקנים כל יום ראשון`);
+// }
+// function helpCommand(msg, match) {
+//   sendMessage(`לא יודע איך לעזור בינתיים`);
+// }
+// function settingsCommand(msg, match) {
+//   sendMessage(`Hi, I am the Pingiregel bot (${msg.text})`);
+// }
+// function whereCommand(msg, match) {
+//   sendMessage(`Hi, I am the Pingiregel bot (${msg.text})`);
+// }
+// function whenCommand(msg, match) {
+//   sendMessage(`Hi, I am the Pingiregel bot (${msg.text})`);
+// }
+// function whoCommand(msg, match) {
+//   sendMessage(`Hi, I am the Pingiregel bot (${msg.text})`);
+// }
+// function whatCommand(msg, match) {
+//   sendMessage(`Hi, I am the Pingiregel bot (${msg.text})`);
+// }
 
-function startCommand(msg, match) {
-  if (msg.from.id == 509453115) {
-    pingiregelGroupChatId = msg.chat.id;
-    DB.deleteSetting("chatId");
-    DB.addSetting({key:"chatId", value:pingiregelGroupChatId});
-  }
-  sendMessage(`סבבה, אני אתחיל לשלוח סקר שחקנים כל יום ראשון`);
-}
-function helpCommand(msg, match) {
-  sendMessage(`לא יודע איך לעזור בינתיים`);
-}
-function settingsCommand(msg, match) {
-  sendMessage(`Hi, I am the Pingiregel bot (${msg.text})`);
-}
-function whereCommand(msg, match) {
-  sendMessage(`Hi, I am the Pingiregel bot (${msg.text})`);
-}
-function whenCommand(msg, match) {
-  sendMessage(`Hi, I am the Pingiregel bot (${msg.text})`);
-}
-function whoCommand(msg, match) {
-  sendMessage(`Hi, I am the Pingiregel bot (${msg.text})`);
-}
-function whatCommand(msg, match) {
-  sendMessage(`Hi, I am the Pingiregel bot (${msg.text})`);
-}
+// function registerCommands(bot) {
+//   // bot.onText(/\/echo (.+)/, (msg, match) => {
+//   //   const chatId = msg.chat.id;
+//   //   const resp = match[1]; // the captured "whatever"
 
-function registerCommands(bot) {
-  // bot.onText(/\/echo (.+)/, (msg, match) => {
-  //   const chatId = msg.chat.id;
-  //   const resp = match[1]; // the captured "whatever"
-
-  bot.onText(/\/start/, startCommand);
-  bot.onText(/\/help/, helpCommand);
-  bot.onText(/\/settings/, settingsCommand);
-  bot.onText(/\/where/, whereCommand);
-  bot.onText(/\/when/, whenCommand);
-  bot.onText(/\/who/, whoCommand);
-  bot.onText(/\/what/, whatCommand);  
-}
+//   bot.onText(/\/start/, startCommand);
+//   bot.onText(/\/help/, helpCommand);
+//   bot.onText(/\/settings/, settingsCommand);
+//   bot.onText(/\/where/, whereCommand);
+//   bot.onText(/\/when/, whenCommand);
+//   bot.onText(/\/who/, whoCommand);
+//   bot.onText(/\/what/, whatCommand);  
+// }
 
 exports.init = function (db, config) {
   DB = db;
@@ -103,8 +103,7 @@ exports.init = function (db, config) {
   .then((value) => {return value;})
   .then((doc) => initBot(doc.value))
   .then((bot) => realizeGroupChatId(bot))
-  .then((bot) => setWebHook(bot))
-  .then((bot) => registerCommands(bot));
+  .then((bot) => setWebHook(bot));
 
   this.config = config;
 }
@@ -286,10 +285,10 @@ exports.callbackReply = function(callback_query, vote) {
   bot.answerCallbackQuery(callback_query.id, response);
 }
 
-exports.handleMessage = function (requestBody) {
-  logger.log(requestBody.message);
-  // commands are handled according to registerCommands
-  bot.processUpdate(requestBody);
-}
+// exports.handleMessage = function (requestBody) {
+//   logger.log(requestBody.message);
+//   // commands are handled according to registerCommands
+//   bot.processUpdate(requestBody);
+// }
 
 

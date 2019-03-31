@@ -32,7 +32,7 @@ function schedule() {
 exports.init = function (db) {
     DB = db;
     BOT.init(db, {targetNumberOfPlayers:TARGET_NUMBER_OF_PLAYERS});
-    schedule();
+    //schedule();
     return this;
 }
 
@@ -58,6 +58,22 @@ function resetPlayers() {
     });
 }
 
+function createNewGame(games) {
+    resetPlayers();
+
+    logger.log("closing old game(s)");
+    _.each(games, (game, index, games) => { 
+        game.status = "closed";
+        logger.log("closing old game: " + game.getId());
+        
+        DB.updateGame(game.getId(), game);
+    });
+
+    var game = new Game();
+    DB.addGame(game);
+    return game;
+}
+
 function createGameIfNeeded(games) {
     if (_.isEmpty(games)) {
         var game = new Game();
@@ -66,7 +82,7 @@ function createGameIfNeeded(games) {
         return game;
     }
 
-    var currentGame = _.max(games, (game) => {return parseInt(game.getId(), 16)});
+    var currentGame = _.max(games, (game) => {return game.getId()});
     
     _.each(games, (game, index, games) => { 
         now = getNow();
@@ -130,7 +146,7 @@ function sendGame(game, now) {
         p = sendPoll(game, now);
     }
 
-    // sendPoll may update game (lastSend and messageId)
+    // sendPoll may update game (lastSent and messageId)
     if (p == null) {
         p = getCurrentGame();
     }
@@ -329,6 +345,20 @@ function updateAlreadySeen(updateId) {
     })
 }
 
+function startCommand(msg) {
+    BOT.setGroupChatId(msg);
+    DB.getGames("open").then((games) => {
+        game = createNewGame(games);
+        sendGame(game, getNow());
+    });
+}
+
+function handleMessage(requestBody) {
+    if (requestBody.message.text == "/start") {
+        startCommand(requestBody.message);
+    }
+}
+
 exports.handleWebhook = function (requestBody) {
     updateAlreadySeen(requestBody.update_id).then((seen) => {
         if (seen) {
@@ -340,7 +370,7 @@ exports.handleWebhook = function (requestBody) {
         }
         if (requestBody.message) {
             logger.log(`got message. chat_id=${requestBody.message.chat.id}, update_id=${requestBody.update_id}`);
-            BOT.handleMessage(requestBody);
+            handleMessage(requestBody);
         }
     })
 }

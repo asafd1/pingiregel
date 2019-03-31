@@ -134,8 +134,9 @@ exports.getGames = function (_status, _after) {
 }
 
 exports.getGame = function (id) {
+    id = parseInt(id);
     logger.log("getting game by id: " + id);
-    return db.collection("games").findOne({_id:toObjectId(id)}).then((doc)=>{
+    return db.collection("games").findOne({_id:id}).then((doc)=>{
         if (doc) {
             var game = Game.createGameFromDb(doc);
             logger.log("found game: " + JSON.stringify(game, null, 2));
@@ -148,17 +149,16 @@ exports.getGame = function (id) {
 exports.addGame = function (game) {
     logger.log("adding game: " + JSON.stringify(game, null, 2));
     p = db.collection("games").insertOne(game);
-    game.setId(game._id); // the _id is being set synchronously
     return p;
 }
 
 exports.updateGame = function (id, game) {
     logger.log("updating game by id: " + id);
     logger.log("game updated to: " + JSON.stringify(game));
-    return db.collection("games").updateOne({_id:toObjectId(id)}, { $set: game });
+    return db.collection("games").updateOne({_id:id}, { $set: game });
 }
 
 exports.deleteGame = function (id) {
     logger.log("deleting game by id: " + id);
-    return db.collection("games").deleteOne({_id:toObjectId(id)});
+    return db.collection("games").deleteOne({_id:id});
 }
