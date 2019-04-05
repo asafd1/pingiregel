@@ -5,12 +5,14 @@ var logger = require('./logger');
 
 var WAZE_DEEP_LINK = "https://www.waze.com/ul?ll=<LAT>%2C<LONG>&navigate=yes&zoom=17";
 var config = {};
-
+var admins = [509453115, // asaf
+              ];
 const certificatePath = "./creds/pingiregel-public.pem";
 var pingiregelGroupChatId = null;
 
 var DB;
 var bot;
+var botName;
 
 
 //Promise.config({ cancellation: true });
@@ -34,17 +36,30 @@ function setWebHook(bot) {
 
 function initBot(token) {
   bot = new TelegramBot(token, {polling: false}); 
-  bot.getMe().then((me)=>logger.log("Bot started: " + me.username));
+  bot.getMe().then((me)=> {
+    botName = me.username;
+    logger.log("Bot started: " + botName);
+  });
   
   return bot;
 }
 
-exports.setGroupChatId = function (msg) {
-  if (msg.from.id == 509453115) {
-    pingiregelGroupChatId = msg.chat.id;
-    DB.deleteSetting("chatId");
-    DB.addSetting({key:"chatId", value:pingiregelGroupChatId});
+exports.name = function () {
+  return botName;
+}
+
+exports.isAdmin = function (user) {
+  if (admins.indexOf(user.id) >= 0) {
+    return true;
+  } else {
+    logger.log(`${user.id} (${user.first_name} , ${user.last_name}) is not an admin`);
   }
+}
+
+exports.setGroupChatId = function (msg) {
+  pingiregelGroupChatId = msg.chat.id;
+  DB.deleteSetting("chatId");
+  DB.addSetting({key:"chatId", value:pingiregelGroupChatId});
 }
 
 function realizeGroupChatId(bot) {
@@ -55,47 +70,6 @@ function realizeGroupChatId(bot) {
   });
   return bot;
 }
-
-// function startCommand(msg, match) {
-//   if (msg.from.id == 509453115) {
-//     pingiregelGroupChatId = msg.chat.id;
-//     DB.deleteSetting("chatId");
-//     DB.addSetting({key:"chatId", value:pingiregelGroupChatId});
-//   }
-//   sendMessage(`סבבה, אני אתחיל לשלוח סקר שחקנים כל יום ראשון`);
-// }
-// function helpCommand(msg, match) {
-//   sendMessage(`לא יודע איך לעזור בינתיים`);
-// }
-// function settingsCommand(msg, match) {
-//   sendMessage(`Hi, I am the Pingiregel bot (${msg.text})`);
-// }
-// function whereCommand(msg, match) {
-//   sendMessage(`Hi, I am the Pingiregel bot (${msg.text})`);
-// }
-// function whenCommand(msg, match) {
-//   sendMessage(`Hi, I am the Pingiregel bot (${msg.text})`);
-// }
-// function whoCommand(msg, match) {
-//   sendMessage(`Hi, I am the Pingiregel bot (${msg.text})`);
-// }
-// function whatCommand(msg, match) {
-//   sendMessage(`Hi, I am the Pingiregel bot (${msg.text})`);
-// }
-
-// function registerCommands(bot) {
-//   // bot.onText(/\/echo (.+)/, (msg, match) => {
-//   //   const chatId = msg.chat.id;
-//   //   const resp = match[1]; // the captured "whatever"
-
-//   bot.onText(/\/start/, startCommand);
-//   bot.onText(/\/help/, helpCommand);
-//   bot.onText(/\/settings/, settingsCommand);
-//   bot.onText(/\/where/, whereCommand);
-//   bot.onText(/\/when/, whenCommand);
-//   bot.onText(/\/who/, whoCommand);
-//   bot.onText(/\/what/, whatCommand);  
-// }
 
 exports.init = function (db, config) {
   DB = db;
@@ -111,7 +85,9 @@ exports.init = function (db, config) {
 function sendMessage(text, inline_keyboard) {
   if (!pingiregelGroupChatId) {
     logger.log("bot not started. can't send message (no chat id)")
-    return new Promise(() => {return 0});
+    return new Promise((resolve, reject) => {
+      resolve(0);
+    });
   }
 
   var opts = { parse_mode : "Markdown" };
@@ -150,7 +126,9 @@ function editMessage(messageId, text, inline_keyboard) {
     logger.log(error)
   });
 
-  return new Promise(() => {return messageId});
+  return new Promise((resolve, reject) => {
+    resolve(messageId);
+  });
 }
 
 function shouldShowNavigationButton(results) {

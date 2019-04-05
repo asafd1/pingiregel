@@ -48,13 +48,13 @@ function Player(id, username, firstname, lastname, vote, historicVotes, joinedAt
         return this.friends;
     }
 
-    this.isFriend = function () {
-        return (this._id.indexOf(".friend") > 0);
+    this.isFriend = function (otherPlayer) {
+        return (otherPlayer._id.startsWith(`${this._id}.friend`));
     }
     
     this.setFriends = function (players) {
         this.friends = _.filter(players, (player) => {
-            return player.isFriend(this);
+            return this.isFriend(player);
         });
     }
 
@@ -76,5 +76,9 @@ function Player(id, username, firstname, lastname, vote, historicVotes, joinedAt
 Player.createPlayerFromDb = function (player) {
     return new Player(player._id, player.username, player.firstname, player.lastname, player.vote, player.historicVotes, player.joinedAt);
 } 
+
+Player.isAnyFriend = function (player) {
+    return (player._id.indexOf(`.friend`) > 0);
+}
 
 module.exports = Player;
