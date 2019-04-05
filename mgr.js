@@ -6,6 +6,7 @@ var _ = require("underscore");
 var logger = require('./logger');
 var cron = require('node-cron');
 var TARGET_NUMBER_OF_PLAYERS = 9;
+var VERSION = "2.0";
 
 const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"];
 
@@ -401,6 +402,11 @@ function remindCommand() {
         remindCurrentGame(game);
     });
 }
+
+function helpCommand() {
+    BOT.sendMessage(`${BOT.name()} ver ${VERSION}`);
+}
+
 // commands:
 // start - enable bot for this group
 // newgame - start new game (admin only)
@@ -408,6 +414,7 @@ function remindCommand() {
 // forbidfriends - disable friends buttons (admin only)
 // pop - pop game in a new message
 // remind - remind players that didn't vote
+// help - about this bot
 // remindAll - remind players that didn't vote and people who voted 'maybe'
 
 function isCommand(text, command) {
@@ -434,8 +441,8 @@ function handleMessage(requestBody) {
     if (isCommand(text, "remind")) {
         remindCommand(requestBody.message);
     }
-    if (isCommand(text, "remindAll")) {
-        forbidFriendsCommand(requestBody.message);
+    if (isCommand(text, "help")) {
+        helpCommand(requestBody.message);
     }
 }
 
