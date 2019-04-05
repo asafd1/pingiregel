@@ -43,7 +43,7 @@ function Game(time, venue, lastSent, status, allowFriends, messageId) {
     this.lastSent = lastSent;
     this.status = status ? status : "open";
     this.messageId = messageId;
-    this.allowFriends = allowFriends ? allowFriends : true;
+    this.allowFriends = allowFriends ? allowFriends : false;
 
     this.getId = function () {
         return this._id;

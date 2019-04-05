@@ -23,9 +23,9 @@ function isEvening(now) {
 }
 
 function schedule() {
-    // checkGame();
+    // handleGame();
     cron.schedule('0 * * * *', () => {
-        checkGame();
+        handleGame();
     });  
 }
   
@@ -41,7 +41,7 @@ exports.getBot = function () {
 }
 
 function resetPlayer(player) {
-    if (player.isFriend()) {
+    if (Player.isAnyFriend(player)) {
         DB.deletePlayer(player.getId());
         return;
     }
@@ -58,20 +58,28 @@ function resetPlayers() {
     });
 }
 
-function createNewGame(games) {
+async function createNewGame() {
     resetPlayers();
 
-    logger.log("closing old game(s)");
-    _.each(games, (game, index, games) => { 
-        game.status = "closed";
-        logger.log("closing old game: " + game.getId());
-        
-        DB.updateGame(game.getId(), game);
-    });
+    p = DB.getGames("open");
+    return p.then(async (games) => {
+        logger.log("closing old game(s)");
+        _.each(games, (game) => { 
+            game.status = "closed";
+            logger.log("closing old game: " + game.getId());
+            
+            DB.updateGame(game.getId(), game);
+        });
 
-    var game = new Game();
-    DB.addGame(game);
-    return game;
+        var game = new Game();
+        await DB.getGame(game.getId()).then(async (g) => {
+            if (g) {
+                await DB.deleteGame(g.getId());
+            } 
+        });
+        DB.addGame(game);
+        return game;
+    });
 }
 
 function createGameIfNeeded(games) {
@@ -109,16 +117,9 @@ exports.getCurrentGame = getCurrentGame;
 
 function getCurrentGame() {
     return DB.getGames("open").then((games) => {
-        return createGameIfNeeded(games);
+        var currentGame = _.max(games, (game) => {return game.getId()});
+        return currentGame;
     });
-}
-
-// exports.pollCurrentGame = function () {
-//     exports.getCurrentGame().then((game) => sendPoll(game));
-// }
-
-function updatePoll(game, results, expand) {
-    BOT.sendPoll(game, results, expand);
 }
 
 function updateGame(game, messageId, now) {
@@ -130,6 +131,19 @@ function updateGame(game, messageId, now) {
     return game;
 }
 
+function updatePoll(game, results, expand) {
+    p = BOT.sendPoll(game, results, expand);
+    return p.then((messageId) => {
+        logger.log("aaa");
+        return updateGame(game, messageId, getNow());
+    });
+}
+
+function resendPoll(game, results, expand) {
+    game.setMessageId(null);
+    updatePoll(game, results, expand);
+}
+
 function sendPoll(game, now) {
     p = BOT.sendPoll(game).then();
     return p.then((messageId) => {
@@ -137,34 +151,36 @@ function sendPoll(game, now) {
     });
 }
 
-function sendGame(game, now) {
-    logger.log(`sendGame. gameId = ${game.getId()}`);
-    var p;
+// function sendGame(game, now) {
+//     logger.log(`sendGame. gameId = ${game.getId()}`);
+//     var p;
 
-    if (!game.getLastSent()) {
-        game.setMessageId(null);
-        p = sendPoll(game, now);
-    }
+//     if (!game.getLastSent()) {
+//         game.setMessageId(null);
+//         p = sendPoll(game, now);
+//     }
 
-    // sendPoll may update game (lastSent and messageId)
-    if (p == null) {
-        p = getCurrentGame();
-    }
-    p.then((game) => {
-        if (now.getDay() >= daysOfWeek.indexOf("רביעי") && 
-            now.getDay() <= daysOfWeek.indexOf("חמישי")) {
-            var p = getResults();
-            p.then((results) => {
-                if ((!hasTargetPlayers(results) && !game.getAllowFriends()) || 
-                    (hasTargetPlayers(results) && game.getAllowFriends())) {
-                        game.setAllowFriends(!game.getAllowFriends());
-                        DB.updateGame(game.getId(), game);
-                        updatePoll(game, results);
-                }
-            })
-        }
-    });
-}
+//     // sendPoll may update game (lastSent and messageId)
+//     if (p == null) {
+//         p = getCurrentGame();
+//     }
+//     p.then((game) => {
+//         if (now.getDay() >= daysOfWeek.indexOf("רביעי") && 
+//             now.getDay() <= daysOfWeek.indexOf("חמישי")) {
+//             var p = getResults();
+//             p.then((results) => {
+//                 htp = hasTargetPlayers(results);
+//                 if ((!htp && !game.getAllowFriends()) || 
+//                     (htp && game.getAllowFriends())) {
+//                         logger.log(`hasTargetPlayers = ${htp}. reverting allowFriends to '${!game.getAllowFriends()}'`);
+//                         game.setAllowFriends(!game.getAllowFriends());
+//                         DB.updateGame(game.getId(), game);
+//                         updatePoll(game, results);
+//                 }
+//             })
+//         }
+//     });
+// }
   
 function hasTargetPlayers(results) {
     return results && results.yes && results.yes >= TARGET_NUMBER_OF_PLAYERS;
@@ -177,6 +193,14 @@ function getNotVoted(results) {
     return null;
 }
 
+function remindCurrentGame(game) {
+    getResults().then((results) => {
+        if (getNotVoted(results) != null) {
+            BOT.sendReminder(game, getNotVoted(results));
+        }
+    });
+}
+
 function checkAndRemind(game, results) {
     if (!hasTargetPlayers(results)) {
         if (getNotVoted(results) != null) {
@@ -185,43 +209,23 @@ function checkAndRemind(game, results) {
     }
 }
 
-function remindGame(game, now) {
-    logger.log(`remindGame. gameId = ${game.getId()}`);
-
-    var p = getResults();
-    p.then((results) => {
-        switch(now.getDay()) {
-            case daysOfWeek.indexOf("ראשון"):
-                if (isEvening(now)) {
-                    checkAndRemind(game, results);        
-                }
-                break;
-            case daysOfWeek.indexOf("שני"):
-            case daysOfWeek.indexOf("שלישי"):
-                if (isMorning(now) || isEvening(now)) {
-                    checkAndRemind(game, results);        
-                }
-                break;
-        }
-    });
+function getOrCreateGame(now) {
+    if (now.getDay() == daysOfWeek.indexOf("ראשון") && isMorning(now)) {
+        logger.log(`Sunday morning. creating game`);
+        return createNewGame();
+    } else {
+        return getCurrentGame();
+    }
 }
 
-function handleGame(game) {
-    logger.log(`handleGame. gameId = ${game.getId()}`);
+function handleGame() {
     now = getNow();
 
-    sendGame(game, now);
-    remindGame(game, now);
-    return game;
-}
-
-function checkGame() {
-    logger.log("checking game status");
-    return getCurrentGame().then((game) => handleGame(game));
-}
-
-exports.checkGame = function () {
-    return checkGame();
+    p = getOrCreateGame(now);
+    p.then((game) => {
+        sendGame(game, now);
+        remindGame(game, now);
+    });
 }
 
 function isFriendVote(vote) {
@@ -250,7 +254,6 @@ function handleFriendVote(gameId, voterPlayer, vote, players, results) {
 }
 
 function handlePlayerVote(gameId, player, vote, results) {
-    // player = Player.createPlayerFromDb(player);
     oldVote = player.getVote();
     if (oldVote) {
         results[oldVote] = _.reject(results[oldVote], (p) => {return p.getId() == player.getId()});
@@ -345,17 +348,95 @@ function updateAlreadySeen(updateId) {
     })
 }
 
+function newGameCommand(msg) {
+    if (BOT.isAdmin(msg.from)) {
+        p = createNewGame();
+        p.then((game) => sendPoll(game, getNow()));
+    }
+}
+
+function setAllowedFriends(game, toggle) {
+    if (game.getAllowFriends() != toggle) {
+        game.setAllowFriends(toggle);
+        getResults().then((results) => {
+            updatePoll(game, results)
+        });
+    }
+}
+
+function allowFriendsCommand(msg) {
+    if (BOT.isAdmin(msg.from)) {
+        p = getCurrentGame();
+        p.then((game) => {
+            setAllowedFriends(game, true);
+        });
+    }
+}
+
+function forbidFriendsCommand(msg) {
+    if (BOT.isAdmin(msg.from)) {
+        p = getCurrentGame();
+        p.then((game) => {
+            setAllowedFriends(game, false);
+        });
+    }
+}
+
 function startCommand(msg) {
-    BOT.setGroupChatId(msg);
-    DB.getGames("open").then((games) => {
-        game = createNewGame(games);
-        sendGame(game, getNow());
+    if (BOT.isAdmin(msg.from)) {
+        BOT.setGroupChatId(msg);
+    }
+}
+
+function popCommand() {
+    p = getCurrentGame();
+    p.then((game) => {
+        getResults().then((results) => {
+            resendPoll(game, results);
+        });
     });
 }
 
+function remindCommand() {
+    getCurrentGame().then((game) => {
+        remindCurrentGame(game);
+    });
+}
+// commands:
+// start - enable bot for this group
+// newgame - start new game (admin only)
+// allowfriends - enable friends buttons (admin only)
+// forbidfriends - disable friends buttons (admin only)
+// pop - pop game in a new message
+// remind - remind players that didn't vote
+// remindAll - remind players that didn't vote and people who voted 'maybe'
+
+function isCommand(text, command) {
+    return text == `/${command}@${BOT.name()}` || text == `/${command}`;
+}
+
 function handleMessage(requestBody) {
-    if (requestBody.message.text == "/start") {
+    text = requestBody.message.text;
+    if (isCommand(text, "start")) {
         startCommand(requestBody.message);
+    }
+    if (isCommand(text, "newgame")) {
+        newGameCommand(requestBody.message);
+    }
+    if (isCommand(text, "pop")) {
+        popCommand(requestBody.message);
+    }
+    if (isCommand(text, "allowfriends")) {
+        allowFriendsCommand(requestBody.message);
+    }
+    if (isCommand(text, "forbidfriends")) {
+        forbidFriendsCommand(requestBody.message);
+    }
+    if (isCommand(text, "remind")) {
+        remindCommand(requestBody.message);
+    }
+    if (isCommand(text, "remindAll")) {
+        forbidFriendsCommand(requestBody.message);
     }
 }
 
