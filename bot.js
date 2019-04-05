@@ -106,6 +106,10 @@ function sendMessage(text, inline_keyboard) {
   return p;
 }
 
+exports.sendMessage = function (text, inline_keyboard) {
+  return sendMessage(text, inline_keyboard);
+}
+
 function editMessage(messageId, text, inline_keyboard) {
   var opts = { parse_mode : "Markdown" };
   opts.chat_id = pingiregelGroupChatId;
