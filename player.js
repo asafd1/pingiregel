@@ -58,6 +58,13 @@ function Player(id, username, firstname, lastname, vote, historicVotes, joinedAt
         });
     }
 
+    this.getNextFriendNumber = function () {
+        if (!this.friends) {
+            return 1;
+        }
+        return this.friends.length + 1;
+    }
+
     this.getNextFriendId = function () {
         if (!this.friends) {
             return 0;

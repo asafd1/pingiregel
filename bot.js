@@ -202,7 +202,8 @@ function getPollKeyboard(game, results, expand, friendsButtons) {
 
 function getText(game, results, expand) {
   var text = `מגיע לכדורגל ביום ${game.getDayOfWeek()} ב-${game.getHour()} ב${game.venue.title}?`;
-  if (expand) {
+
+  if (expand && results) {
     text += "\n";
     lengthYes = results.yes ? `(${results.yes.length})` : "";
     lengthMaybe = results.maybe ? `(${results.maybe.length})` : "";
@@ -221,6 +222,8 @@ function getText(game, results, expand) {
 exports.sendPoll = function (game, results, expand) {
   var messageId = game.getMessageId();
   logger.log(messageId ? "updating poll" : "sending poll");
+
+  expand = true; // always expaned
 
   inline_keyboard = getPollKeyboard(game, results, expand, game.getAllowFriends());
   

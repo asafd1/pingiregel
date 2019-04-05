@@ -134,7 +134,6 @@ function updateGame(game, messageId, now) {
 function updatePoll(game, results, expand) {
     p = BOT.sendPoll(game, results, expand);
     return p.then((messageId) => {
-        logger.log("aaa");
         return updateGame(game, messageId, getNow());
     });
 }
@@ -237,7 +236,7 @@ function handleFriendVote(gameId, voterPlayer, vote, players, results) {
 
     if (vote == "plus1") {
         var id = voterPlayer.getNextFriendId();
-        var firstname = voterPlayer.getFirstName() + "'s friend";
+        var firstname = voterPlayer.getFirstName() + `'s friend (${voterPlayer.getNextFriendNumber()})`;
         player = new Player (id, id, firstname, null);
         player.setVote(gameId, "yes");
         player.setJoinedAt(getNow());
