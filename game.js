@@ -61,6 +61,14 @@ function Game(time, venue, lastSent, status, allowFriends, messageId) {
         this._id = _id;
     }
 
+    this.setChatId = function (chatId) {
+        this.chatId = chatId;
+    }
+
+    this.getChatId = function () {
+        return this.chatId;
+    }
+
     this.setMessageId = function (messageId) {
         this.messageId = messageId;
     }
@@ -88,7 +96,8 @@ function Game(time, venue, lastSent, status, allowFriends, messageId) {
 
 Game.createGameFromDb = function (game) {
     g = new Game(game.time, game.venue, game.lastSent, game.status, game.allowFriends, game.messageId);
-    g.setId(game._id);
+    g.setId(game._id._id);
+    g.setChatId(game._id.chatId);
     return g;
 } 
 

@@ -2,13 +2,13 @@ const TelegramBot = require('node-telegram-bot-api');
 var fs = require('fs');
 var _ = require("underscore");
 var logger = require('./logger');
+var httpContext = require('express-http-context');
 
 var WAZE_DEEP_LINK = "https://www.waze.com/ul?ll=<LAT>%2C<LONG>&navigate=yes&zoom=17";
 var config = {};
 var admins = [509453115, // asaf
               ];
 const certificatePath = "./creds/pingiregel-public.pem";
-var pingiregelGroupChatId = null;
 
 var DB;
 var bot;
@@ -56,35 +56,26 @@ exports.isAdmin = function (user) {
   }
 }
 
-exports.setGroupChatId = function (msg) {
-  pingiregelGroupChatId = msg.chat.id;
-  DB.deleteSetting("chatId");
-  DB.addSetting({key:"chatId", value:pingiregelGroupChatId});
-}
-
-function realizeGroupChatId(bot) {
-  DB.getSetting("chatId").then((d) => {
-    if (d && d.value) {
-      pingiregelGroupChatId = d.value;
-    }
-  });
-  return bot;
-}
-
 exports.init = function (db, config) {
   DB = db;
   DB.getMisc("token")
   .then((value) => {return value;})
   .then((doc) => initBot(doc.value))
-  .then((bot) => realizeGroupChatId(bot))
   .then((bot) => setWebHook(bot));
 
   this.config = config;
 }
 
+function getChatId() {
+  var message = httpContext.get('message');
+  if (message) {
+      return httpContext.get('message').chat.id;
+  }
+}
+
 function sendMessage(text, inline_keyboard) {
-  if (!pingiregelGroupChatId) {
-    logger.log("bot not started. can't send message (no chat id)")
+  if (!getChatId()) {
+    logger.log("no chat id. can't send message")
     return new Promise((resolve, reject) => {
       resolve(0);
     });
@@ -99,7 +90,7 @@ function sendMessage(text, inline_keyboard) {
   }
 
   logger.log(`sending message. text = '${text}'`);
-  p = bot.sendMessage(pingiregelGroupChatId, text, opts);
+  p = bot.sendMessage(getChatId(), text, opts);
   p.then((message) => {
     logger.log(`message sent. messageId=${message.message_id}`);
   })
@@ -112,7 +103,7 @@ exports.sendMessage = function (text, inline_keyboard) {
 
 function editMessage(messageId, text, inline_keyboard) {
   var opts = { parse_mode : "Markdown" };
-  opts.chat_id = pingiregelGroupChatId;
+  opts.chat_id = getChatId();
   opts.message_id =  messageId;
 
   if (inline_keyboard) {
@@ -124,7 +115,7 @@ function editMessage(messageId, text, inline_keyboard) {
   };
 
   inline_keyboard_str = JSON.stringify(inline_keyboard);
-  logger.log(`updating message. chat_id = '${pingiregelGroupChatId} 'messageId = '${messageId}' 'inline_keyboard' = '${inline_keyboard_str}'`);
+  logger.log(`updating message. 'messageId = '${messageId}' 'inline_keyboard' = '${inline_keyboard_str}'`);
   bot.editMessageText(text, opts).
   catch((error) => {
     logger.log(error)

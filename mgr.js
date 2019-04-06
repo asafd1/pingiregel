@@ -307,9 +307,7 @@ function getResults () {
 }
 
 function handleCallbackQuery(callbackQuery) {
-    if (callbackQuery.data.startsWith("poll")) {
-        logger.log(`chat.id=${callbackQuery.message.chat.id} msg.id=${callbackQuery.message.message_id}`);
-        
+    if (callbackQuery.data.startsWith("poll")) {        
         var parts = callbackQuery.data.split(".");
         var gameId = parts[1];
         var vote = parts.length == 3 ? parts[2] : null;
@@ -382,12 +380,6 @@ function forbidFriendsCommand(msg) {
     }
 }
 
-function startCommand(msg) {
-    if (BOT.isAdmin(msg.from)) {
-        BOT.setGroupChatId(msg);
-    }
-}
-
 function popCommand() {
     p = getCurrentGame();
     p.then((game) => {
@@ -408,7 +400,6 @@ function helpCommand() {
 }
 
 // commands:
-// start - enable bot for this group
 // newgame - start new game (admin only)
 // allowfriends - enable friends buttons (admin only)
 // forbidfriends - disable friends buttons (admin only)
@@ -456,7 +447,7 @@ exports.handleWebhook = function (requestBody) {
             handleCallbackQuery(requestBody.callback_query);
         }
         if (requestBody.message) {
-            logger.log(`got message. chat_id=${requestBody.message.chat.id}, update_id=${requestBody.update_id}`);
+            logger.log(`got message. update_id=${requestBody.update_id}`);
             handleMessage(requestBody);
         }
     })

@@ -3,10 +3,13 @@ var app = express();
 var fs = require('fs');
 var https = require('https');
 var logger = require('./logger');
+var httpContext = require('express-http-context');
 
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(httpContext.middleware);
+app.use(httpContext.middleware);
 
 // TODO:
 // mongo auth + app auth + encryption
@@ -60,9 +63,23 @@ function shouldVerifyPassword(request) {
   if (request.method != "GET") return true;
 }
 
+function setMessageContext(request) {
+  var message;
+  if (request.body.message) {
+    message = request.body.message;
+  } else if (request.body.callback_query) {
+    message = request.body.callback_query.message;
+  }
+  //TODO: move this to mgr
+  httpContext.set('message', message); 
+  logger.log(`msg.id=${message.message_id}`);
+  DB.setChat(message.chat);
+}
+
 app.use(function (request, response, next) {
   logger.log(request.path);
   if (request.path.startsWith("/webhook")) {
+    setMessageContext(request);
     dumpWebhook(request);
   }
   if (shouldVerifyPassword(request) && !verifyPassword(request, response, next)) {
