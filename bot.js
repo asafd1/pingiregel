@@ -209,6 +209,8 @@ function getText(game, results, expand) {
     text += getNames(results.maybe);
     text += "\n" + `לא ${lengthNo}: `;
     text += getNames(results.no);
+    text += "\n" + `לא הצביעו ${lengthNo}: `;
+    text += getNames(results.nill);
     text += "\n\n";
   }
   return text;

@@ -20,7 +20,7 @@ exports.prepareForSend = function (response) {
 };
 
 exports.connect = function () {
-    return (MongoClient.connect(mongouri, { useNewUrlParser: true, autoIndex: false }).then((mongodb) => {
+    return (MongoClient.connect(mongouri, { useNewUrlParser: true }).then((mongodb) => {
         db = mongodb.db(DBNAME);
         logger.log("connected to db: "+ db.databaseName);
         return this;
@@ -86,17 +86,6 @@ function getCurrentMessage() {
     return message;
 }
 
-// function getChatId() {
-//     var message = httpContext.get('message');
-//     if (message) {
-//         return httpContext.get('message').chat.id;
-//     }
-// }
-
-function getCompositeIdWithChatIdJson(id) {
-    return JSON.stringify(getCompositeIdWithChatId(id));
-}
-
 function getCompositeIdWithChatId(id) {
     var _id = {};
     _id['_id'] = id;
@@ -156,8 +145,9 @@ exports.getGames = function (_status) {
 }
 
 exports.getGame = function (id) {
+    id = parseInt(id);
     logger.log("getting game by id: " + id);
-    return db.collection("games").findOne({_id:getCompositeIdWithChatIdJson(id)}).then((doc)=>{
+    return db.collection("games").findOne({_id:getCompositeIdWithChatId(id)}).then((doc)=>{
         if (doc) {
             var game = Game.createGameFromDb(doc);
             logger.log("found game: " + JSON.stringify(game, null, 2));
