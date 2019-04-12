@@ -3,17 +3,15 @@ var fs = require('fs');
 var _ = require("underscore");
 var logger = require('./logger');
 var httpContext = require('express-http-context');
+var chats = [];
 
 var WAZE_DEEP_LINK = "https://www.waze.com/ul?ll=<LAT>%2C<LONG>&navigate=yes&zoom=17";
 var config = {};
-var admins = [509453115, // asaf
-              ];
 const certificatePath = "./creds/pingiregel-public.pem";
 
 var DB;
 var bot;
 var botName;
-
 
 //Promise.config({ cancellation: true });
 process.env.NTBA_FIX_350 = 1;
@@ -34,14 +32,29 @@ function setWebHook(bot) {
   return bot;
 }
 
+function loadChats() {
+  DB.getChats().then(c => chats = c);
+}
+
 function initBot(token) {
   bot = new TelegramBot(token, {polling: false}); 
   bot.getMe().then((me)=> {
     botName = me.username;
     logger.log("Bot started: " + botName);
   });
-  
+
+  loadChats();
+
   return bot;
+}
+
+function getAdmins(){
+  let chat = chats.find(_chat => _chat.id == getChatId());
+  if (chat) {
+    return chat.admins;
+  } else {
+    return [];
+  }
 }
 
 exports.name = function () {
@@ -49,10 +62,13 @@ exports.name = function () {
 }
 
 exports.isAdmin = function (user) {
+  let admins = getAdmins();
+  
   if (admins.indexOf(user.id) >= 0) {
     return true;
   } else {
     logger.log(`${user.id} (${user.first_name} , ${user.last_name}) is not an admin`);
+    return false;
   }
 }
 
@@ -76,9 +92,7 @@ function getChatId() {
 function sendMessage(text, inline_keyboard) {
   if (!getChatId()) {
     logger.log("no chat id. can't send message")
-    return new Promise((resolve, reject) => {
-      resolve(0);
-    });
+    return Promise.resolve(0);
   }
 
   var opts = { parse_mode : "Markdown" };
@@ -93,7 +107,10 @@ function sendMessage(text, inline_keyboard) {
   p = bot.sendMessage(getChatId(), text, opts);
   p.then((message) => {
     logger.log(`message sent. messageId=${message.message_id}`);
-  })
+  }).catch((e) => {
+    logger.log(`error: ${e}`);
+  });
+
   return p;
 }
 
@@ -116,14 +133,11 @@ function editMessage(messageId, text, inline_keyboard) {
 
   inline_keyboard_str = JSON.stringify(inline_keyboard);
   logger.log(`updating message. 'messageId = '${messageId}' 'inline_keyboard' = '${inline_keyboard_str}'`);
-  bot.editMessageText(text, opts).
-  catch((error) => {
-    logger.log(error)
+  bot.editMessageText(text, opts).catch((e) => {
+    logger.log(`error: ${e}`);
   });
 
-  return new Promise((resolve, reject) => {
-    resolve(messageId);
-  });
+  return Promise.resolve(messageId);
 }
 
 function shouldShowNavigationButton(results) {
@@ -264,7 +278,9 @@ exports.callbackReply = function(callback_query, vote) {
       break;
   }
   response += " " + callback_query.from.first_name;
-  bot.answerCallbackQuery(callback_query.id, response);
+  bot.answerCallbackQuery(callback_query.id, response).catch((e) => {
+    logger.log(`error: ${e}`);
+  });;
 }
 
 // exports.handleMessage = function (requestBody) {

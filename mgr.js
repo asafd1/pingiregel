@@ -341,7 +341,7 @@ function updateAlreadySeen(updateId) {
         if (value && value >= updateId) {
             return true;
         }
-        DB.addMisc(DB.makeSetting("updateId", updateId));
+        DB.setMisc(DB.makeSetting("updateId", updateId));
         return false;
     })
 }

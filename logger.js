@@ -4,7 +4,7 @@ exports.log = function (msg) {
     var time = new Date();
     var message = httpContext.get('message');
     if (message) {
-        chatId = `: ${httpContext.get('message').chat.id} `;
+        chatId = `: chatId=${httpContext.get('message').chat.id} `;
     } else {
         chatId = "";
     }

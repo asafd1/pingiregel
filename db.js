@@ -1,9 +1,10 @@
 const MongoClient = require('mongodb').MongoClient;
 var _ = require("underscore");
 var logger = require('./logger');
+var httpContext = require('express-http-context');
 var Game = require("./game"); // this needs to be generalized (supply object mappers to the db module)
 var Player = require("./player"); // this needs to be generalized (supply object mappers to the db module)
-var httpContext = require('express-http-context');
+let Chat = require('./chat.js');
 
 const DBNAME = "pingiregel";
 const CHAT_ID_COL = "chatId";
@@ -29,7 +30,8 @@ exports.connect = function () {
 
 // SETTINGS
 exports.makeSetting = function (_key, _value) {
-    return { key : _key,
+    return { _id : _key,
+             key : _key,
              value : _value };
 }
 
@@ -72,9 +74,9 @@ exports.deleteMisc = function (_key) {
     return db.collection("misc").deleteOne({key:_key});
 }
 
-exports.addMisc = function (setting) {
-    logger.log("insert misc: " + setting);
-    return db.collection("misc").insertOne(setting);
+exports.setMisc = function (setting) {
+    logger.log("set misc: " + setting.key);
+    return db.collection("misc").updateOne({_id:setting.key}, {$set: setting}, {upsert:true});
 }
 
 // PLAYERS
@@ -176,9 +178,28 @@ exports.deleteGame = function (id) {
 
 // CHATS
 exports.setChat = function (chat) {
-    //var chatDb = Object.assign({}, chat); // clone chat before chaning it
-    // chat._id = chat.id;
-    // delete chat.id;
-    logger.log("setting chat: " + JSON.stringify(chat, null, 2));
-    return db.collection("chats").updateOne({_id:chat.id}, {$set:chat}, {upsert:true}).catch((e) => logger.log(e));
+    db.collection("chats").findOne({_id:chat.id}).then((doc) => {
+        if (!doc) {
+            logger.log("setting chat: " + JSON.stringify(chat, null, 2));
+            return db.collection("chats").updateOne({_id:chat.id}, {$set:chat}, {upsert:true}).catch((e) => logger.log(e));
+        } else {
+            logger.log(`aleady exists. chatId=${chat.id}`);
+        }
+    })
+}
+
+exports.getChats = function () {
+    logger.log("getting all chats");
+    return db.collection("chats").find({}).toArray().then((chats) => {
+        return chats.map(chat => new Chat(chat));
+    })
+}
+
+exports.getChat = function (id) {
+    logger.log("getting chat by id: " + id);
+    return db.collection("chats").findOne({_id:id}).then((chat) => {
+        if (chat) {
+            return new Chat(chat);
+        }
+    })
 }

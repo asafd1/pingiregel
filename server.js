@@ -1,9 +1,10 @@
+var logger = require('./logger');
 var express = require('express');
 var app = express();
 var fs = require('fs');
 var https = require('https');
-var logger = require('./logger');
 var httpContext = require('express-http-context');
+var Chat = require('./chat.js');
 
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -73,7 +74,7 @@ function setMessageContext(request) {
   //TODO: move this to mgr
   httpContext.set('message', message); 
   logger.log(`msg.id=${message.message_id}`);
-  DB.setChat(message.chat);
+  DB.setChat(new Chat(message.chat));
 }
 
 app.use(function (request, response, next) {
@@ -120,7 +121,7 @@ app.route('/misc/:setting')
 
 app.route('/misc')
 .post(function(request, response, next) {
-  p = DB.addMisc(request.body);
+  p = DB.setMisc(request.body);
   p.then((value) => {sendResponse(response, value)});
 });
 
