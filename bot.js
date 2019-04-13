@@ -1,13 +1,18 @@
 const TelegramBot = require('node-telegram-bot-api');
 var fs = require('fs');
 var _ = require("underscore");
-var logger = require('./logger');
 var httpContext = require('express-http-context');
+var logger = require('./logger');
+var Chat = require('./chat.js');
+var CRYPTO = require("./crypto");
+
 var chats = [];
 
 var WAZE_DEEP_LINK = "https://www.waze.com/ul?ll=<LAT>%2C<LONG>&navigate=yes&zoom=17";
 var config = {};
 const certificatePath = "./creds/pingiregel-public.pem";
+const ENCRYPTED_GLOBAL_ADMINS = ["008e0c277bf2ceb9f22da3d2aa0fffea"];
+let GLOBAL_ADMINS;
 
 var DB;
 var bot;
@@ -32,8 +37,8 @@ function setWebHook(bot) {
   return bot;
 }
 
-function loadChats() {
-  DB.getChats().then(c => chats = c);
+function loadChats() { // TODO: move to mgr
+  DB.getChats().then(c => Chat.setChats(c));
 }
 
 function initBot(token) {
@@ -43,18 +48,24 @@ function initBot(token) {
     logger.log("Bot started: " + botName);
   });
 
+  GLOBAL_ADMINS = ENCRYPTED_GLOBAL_ADMINS.map(ga => parseInt(CRYPTO.decryptSync(ga)));
   loadChats();
 
   return bot;
 }
 
+exports.getChatSettings = function (id) {
+  return chats.find(chat => chat.id == id);
+}
+
 function getAdmins(){
+  let admins = []
   let chat = chats.find(_chat => _chat.id == getChatId());
   if (chat) {
-    return chat.admins;
-  } else {
-    return [];
+    admins = chat.admins;
   }
+
+  return admins.concat(GLOBAL_ADMINS);
 }
 
 exports.name = function () {
@@ -118,6 +129,13 @@ exports.sendMessage = function (text, inline_keyboard) {
   return sendMessage(text, inline_keyboard);
 }
 
+function deleteMessage(messageId) {
+  logger.log(`deleting message. 'messageId = '${messageId}'`);
+  bot.deleteMessage(getChatId(), messageId).catch((e) => {
+    logger.log(`error: ${e}`);
+  });
+}
+
 function editMessage(messageId, text, inline_keyboard) {
   var opts = { parse_mode : "Markdown" };
   opts.chat_id = getChatId();
@@ -144,22 +162,7 @@ function shouldShowNavigationButton(results) {
   return results && results.yes && results.yes.length >= config.targetNumberOfPlayer;
 }
 
-function getNames(players) {
-  names = _.map(players, (player) => {
-    name = player.firstname;
-    if (player.lastname) {
-      name +=  " " + player.lastname;
-    }
-    if (player.getId().indexOf(".friend") > 0) {
-      return " " + name;
-    }
-    return ` [${name}](tg://user?id=${player.getId()})`;
-  });
-
-  return names.length > 0 ? names.join() : "אף אחד";
-}
-
-function getPollKeyboard(game, results, expand, friendsButtons) {
+function getPollKeyboard(game, results, friendsButtons) {
   var yesText = "כן";
   var maybeText = "אולי";
   var noText = "לא";
@@ -191,11 +194,6 @@ function getPollKeyboard(game, results, expand, friendsButtons) {
         [{"text": plusFriendText, "callback_data":`poll.${game.getId()}.plus1`},
         {"text": minusFriendText, "callback_data":`poll.${game.getId()}.minus1`}]);
     }
-  
-    if (!expand) {
-      inline_keyboard.push(
-        [{"text": "פרט לי", "callback_data":`expand.${game.getId()}`}]);
-    }
   }
 
   if (shouldShowNavigationButton(results)) {
@@ -209,37 +207,57 @@ function getPollKeyboard(game, results, expand, friendsButtons) {
   return inline_keyboard;
 }
 
-function getText(game, results, expand) {
-  var text = `מגיע לכדורגל ביום ${game.getDayOfWeek()} ב-${game.getHour()} ב${game.venue.title}?`;
+function getNames(players) {
+  names = _.map(players, (player) => {
+    name = player.firstname;
+    if (player.lastname) {
+      name +=  " " + player.lastname;
+    }
+    if (player.getId().indexOf(".friend") > 0) {
+      return " " + name;
+    }
+    return ` [${name}](tg://user?id=${player.getId()})`;
+  });
 
-  if (expand && results) {
+  return names.length > 0 ? names.join() : "אף אחד";
+}
+
+function getLengthText(title, votes) {
+  length = votes && votes.length > 0 ? `(${votes.length})` : "";
+  return `${title} ${length}: `
+}
+
+function getText(game, results) {
+  var text = `מגיע למשחק ביום ${game.getDayOfWeek()} ב-${game.getHour()} ב${game.venue.title}?`;
+
+  if (results) {
     text += "\n";
-    lengthYes = results.yes ? `(${results.yes.length})` : "";
-    lengthMaybe = results.maybe ? `(${results.maybe.length})` : "";
-    lengthNo = results.no ? `(${results.no.length})` : "";
-    text += "\n*" + `באים ${lengthYes}:* `;
+    text += "\n*" + getLengthText('באים', results.yes) + "*";
     text += getNames(results.yes);
-    text += "\n" + `אולי ${lengthMaybe}: `;
+    text += "\n" + getLengthText('אולי', results.maybe);
     text += getNames(results.maybe);
-    text += "\n" + `לא ${lengthNo}: `;
+    text += "\n" + getLengthText('לא', results.no);
     text += getNames(results.no);
-    text += "\n" + `לא הצביעו ${lengthNo}: `;
+    text += "\n" + getLengthText('לא הצביעו', results.nill);
     text += getNames(results.nill);
     text += "\n\n";
   }
   return text;
 }
 
-exports.sendPoll = function (game, results, expand) {
+exports.sendPoll = function (game, results, resend = false) {
   var messageId = game.getMessageId();
   logger.log(messageId ? "updating poll" : "sending poll");
 
-  expand = true; // always expaned
-
-  inline_keyboard = getPollKeyboard(game, results, expand, game.getAllowFriends());
+  inline_keyboard = getPollKeyboard(game, results, game.getAllowFriends());
   
-  var text = getText(game, results, expand);
-  if (!messageId) {
+  var text = getText(game, results);
+  if (resend && messageId) {
+    editMessage(messageId, "סקר נסגר");
+    deleteMessage(messageId);
+  }
+
+  if (!messageId || resend) {
     p = sendMessage(text, inline_keyboard);
     return p.then((message) => {return message.message_id;});
   } else {
