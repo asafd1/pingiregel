@@ -8,7 +8,7 @@ var logger = require('./logger');
 var httpContext = require('express-http-context');
 var cron = require('node-cron');
 var TARGET_NUMBER_OF_PLAYERS = 9;
-var VERSION = "2.0";
+var VERSION = "3.0";
 
 const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"];
 
