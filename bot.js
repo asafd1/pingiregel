@@ -37,10 +37,6 @@ function setWebHook(bot) {
   return bot;
 }
 
-function loadChats() { // TODO: move to mgr
-  DB.getChats().then(c => Chat.setChats(c));
-}
-
 function initBot(token) {
   bot = new TelegramBot(token, {polling: false}); 
   bot.getMe().then((me)=> {
@@ -49,7 +45,6 @@ function initBot(token) {
   });
 
   GLOBAL_ADMINS = ENCRYPTED_GLOBAL_ADMINS.map(ga => parseInt(CRYPTO.decryptSync(ga)));
-  loadChats();
 
   return bot;
 }
@@ -243,6 +238,10 @@ function getText(game, results) {
     text += "\n\n";
   }
   return text;
+}
+
+exports.closePoll = function (messageId) {
+  editMessage(messageId, "סקר נסגר");
 }
 
 exports.sendPoll = function (game, results, resend = false) {

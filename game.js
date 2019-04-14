@@ -1,10 +1,7 @@
-const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"];
+const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
 const IST = 2;
 
-function getDefaultTime() {
-    dayOfWeek = 4; // Thursday
-    hour = 17; // 17:00 UTC, 19:00 IST
-
+function getDefaultTime(hour = 17 /* 19:00 IST */, dayOfWeek = 4 /* Thursday */) {
     var resultDate = new Date();
     resultDate.setDate(resultDate.getDate() + (7 + dayOfWeek - resultDate.getDay()) % 7);
     resultDate.setUTCHours(hour);
@@ -26,12 +23,8 @@ function getDefaultVenue() {
 }
 
 // Constructor
-function Game(time, venue, lastSent, status, allowFriends, messageId) {
-    if (!time) {
-        this.time = getDefaultTime();
-    } else {
-        this.time = time;
-    }
+function Game(hour, dayOfWeek, venue, lastSent, status, allowFriends, messageId) {
+    this.time = getDefaultTime(hour, dayOfWeek);
 
     if (!venue) {
         this.venue = getDefaultVenue();
@@ -95,7 +88,7 @@ function Game(time, venue, lastSent, status, allowFriends, messageId) {
 }
 
 Game.createGameFromDb = function (game) {
-    g = new Game(game.time, game.venue, game.lastSent, game.status, game.allowFriends, game.messageId);
+    g = new Game(game.hour, game.dayOfWeek, game.venue, game.lastSent, game.status, game.allowFriends, game.messageId);
     g.setId(game._id._id);
     g.setChatId(game._id.chatId);
     return g;

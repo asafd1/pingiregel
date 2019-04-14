@@ -3,8 +3,18 @@ class Chat {
         this.id = chat.id;
         this.title = chat.title;
         this.admins = chat.admins;
-        this.venue = chat.venue;
-        this.time = chat.time;
+
+        if (chat.venue) {
+            this.venue = chat.venue;
+        }
+
+        if (chat.hour) {
+            this.hour = chat.hour;
+        }
+
+        if (chat.dayOfWeek) {
+            this.dayOfWeek = chat.dayOfWeek;
+        }
     }
 
     addAdmin(adminId) {
@@ -20,17 +30,7 @@ class Chat {
         }
         return this.admins.indexOf(adminId) >= 0;
     }
-
-    static setChats(chats) {
-        Chat.chats = chats;
-    }
-
-    static byId(id) {
-        return Chat.chats.find(chat => chat.id == id);
-    }
 }
-
-Chat.chats = [];
 
 module.exports = Chat;
 

@@ -67,18 +67,19 @@ function getCurrentMessage() {
 
 function getGameOptions() {
     let opts = [];
-    let chat;
     currentMessage = getCurrentMessage();
-    if (currentMessage) {
-        chat = Chat.byId(currentMessage.chat.id);
+    if (!currentMessage) {
+        return Promise.resolve(opts);
     }
 
-    if (chat) {
-        opts.push(chat.time);
-        opts.push(chat.venue);
-    }
-
-    return opts;
+    return DB.getChat(currentMessage.chat.id).then((chat) => {
+        if (chat) {
+            opts.push(chat.hour);
+            opts.push(chat.dayOfWeek);
+            opts.push(chat.venue);
+        }
+        return opts;
+    });
 }
 
 async function createNewGame() {
@@ -92,16 +93,19 @@ async function createNewGame() {
             logger.log("closing old game: " + game.getId());
             
             DB.updateGame(game.getId(), game);
+            BOT.closePoll(game.getMessageId());
         });
 
-        var game = new Game(...getGameOptions());
-        await DB.getGame(game.getId()).then(async (g) => {
-            if (g) {
-                await DB.deleteGame(g.getId());
-            } 
+        return getGameOptions().then(async (opts) => {
+            var game = new Game(...opts);
+            await DB.getGame(game.getId()).then(async (g) => {
+                if (g) {
+                    await DB.deleteGame(g.getId());
+                } 
+            });
+            DB.addGame(game);
+            return game;
         });
-        DB.addGame(game);
-        return game;
     });
 }
 
