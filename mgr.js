@@ -2,8 +2,10 @@ var BOT = require("./bot");
 var DB;
 var Game = require("./game");
 var Player = require("./player");
+var Chat = require('./chat.js');
 var _ = require("underscore");
 var logger = require('./logger');
+var httpContext = require('express-http-context');
 var cron = require('node-cron');
 var TARGET_NUMBER_OF_PLAYERS = 9;
 var VERSION = "2.0";
@@ -59,6 +61,27 @@ function resetPlayers() {
     });
 }
 
+function getCurrentMessage() {
+    return httpContext.get('message');
+}
+
+function getGameOptions() {
+    let opts = [];
+    currentMessage = getCurrentMessage();
+    if (!currentMessage) {
+        return Promise.resolve(opts);
+    }
+
+    return DB.getChat(currentMessage.chat.id).then((chat) => {
+        if (chat) {
+            opts.push(chat.hour);
+            opts.push(chat.dayOfWeek);
+            opts.push(chat.venue);
+        }
+        return opts;
+    });
+}
+
 async function createNewGame() {
     resetPlayers();
 
@@ -70,16 +93,19 @@ async function createNewGame() {
             logger.log("closing old game: " + game.getId());
             
             DB.updateGame(game.getId(), game);
+            BOT.closePoll(game.getMessageId());
         });
 
-        var game = new Game();
-        await DB.getGame(game.getId()).then(async (g) => {
-            if (g) {
-                await DB.deleteGame(g.getId());
-            } 
+        return getGameOptions().then(async (opts) => {
+            var game = new Game(...opts);
+            await DB.getGame(game.getId()).then(async (g) => {
+                if (g) {
+                    await DB.deleteGame(g.getId());
+                } 
+            });
+            DB.addGame(game);
+            return game;
         });
-        DB.addGame(game);
-        return game;
     });
 }
 
@@ -132,16 +158,15 @@ function updateGame(game, messageId, now) {
     return game;
 }
 
-function updatePoll(game, results, expand) {
-    p = BOT.sendPoll(game, results, expand);
+function updatePoll(game, results, resend) {
+    p = BOT.sendPoll(game, results, resend);
     return p.then((messageId) => {
         return updateGame(game, messageId, getNow());
     });
 }
 
 function resendPoll(game, results, expand) {
-    game.setMessageId(null);
-    updatePoll(game, results, expand);
+    return updatePoll(game, results, true);
 }
 
 function sendPoll(game, now) {
@@ -199,14 +224,6 @@ function remindCurrentGame(game) {
             BOT.sendReminder(game, getNotVoted(results));
         }
     });
-}
-
-function checkAndRemind(game, results) {
-    if (!hasTargetPlayers(results)) {
-        if (getNotVoted(results) != null) {
-            BOT.sendReminder(game, getNotVoted(results));
-        }
-    }
 }
 
 function getOrCreateGame(now) {
@@ -307,9 +324,7 @@ function getResults () {
 }
 
 function handleCallbackQuery(callbackQuery) {
-    if (callbackQuery.data.startsWith("poll")) {
-        logger.log(`chat.id=${callbackQuery.message.chat.id} msg.id=${callbackQuery.message.message_id}`);
-        
+    if (callbackQuery.data.startsWith("poll")) {        
         var parts = callbackQuery.data.split(".");
         var gameId = parts[1];
         var vote = parts.length == 3 ? parts[2] : null;
@@ -343,7 +358,7 @@ function updateAlreadySeen(updateId) {
         if (value && value >= updateId) {
             return true;
         }
-        DB.addMisc(DB.makeSetting("updateId", updateId));
+        DB.setMisc(DB.makeSetting("updateId", updateId));
         return false;
     })
 }
@@ -359,7 +374,7 @@ function setAllowedFriends(game, toggle) {
     if (game.getAllowFriends() != toggle) {
         game.setAllowFriends(toggle);
         getResults().then((results) => {
-            updatePoll(game, results)
+            resendPoll(game, results)
         });
     }
 }
@@ -382,12 +397,6 @@ function forbidFriendsCommand(msg) {
     }
 }
 
-function startCommand(msg) {
-    if (BOT.isAdmin(msg.from)) {
-        BOT.setGroupChatId(msg);
-    }
-}
-
 function popCommand() {
     p = getCurrentGame();
     p.then((game) => {
@@ -399,7 +408,9 @@ function popCommand() {
 
 function remindCommand() {
     getCurrentGame().then((game) => {
-        remindCurrentGame(game);
+        getResults().then((results) => {
+            resendPoll(game, results).then( () => remindCurrentGame(game));
+        });
     });
 }
 
@@ -408,14 +419,13 @@ function helpCommand() {
 }
 
 // commands:
-// start - enable bot for this group
 // newgame - start new game (admin only)
 // allowfriends - enable friends buttons (admin only)
 // forbidfriends - disable friends buttons (admin only)
 // pop - pop game in a new message
 // remind - remind players that didn't vote
 // help - about this bot
-// remindAll - remind players that didn't vote and people who voted 'maybe'
+// #remindAll - remind players that didn't vote and people who voted 'maybe'
 
 function isCommand(text, command) {
     return text == `/${command}@${BOT.name()}` || text == `/${command}`;
@@ -423,9 +433,6 @@ function isCommand(text, command) {
 
 function handleMessage(requestBody) {
     text = requestBody.message.text;
-    if (isCommand(text, "start")) {
-        startCommand(requestBody.message);
-    }
     if (isCommand(text, "newgame")) {
         newGameCommand(requestBody.message);
     }
@@ -456,7 +463,7 @@ exports.handleWebhook = function (requestBody) {
             handleCallbackQuery(requestBody.callback_query);
         }
         if (requestBody.message) {
-            logger.log(`got message. chat_id=${requestBody.message.chat.id}, update_id=${requestBody.update_id}`);
+            logger.log(`got message. update_id=${requestBody.update_id}`);
             handleMessage(requestBody);
         }
     })

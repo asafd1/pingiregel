@@ -5,6 +5,7 @@
   "main": "server.js",
   "dependencies": {
     "express": "^4.16.4",
+    "express-http-context": "^1.2.1",
     "mongodb": "^3.1.13",
     "node-cron": "^2.0.3",
     "node-telegram-bot-api": "^0.30.0",

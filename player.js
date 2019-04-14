@@ -81,7 +81,13 @@ function Player(id, username, firstname, lastname, vote, historicVotes, joinedAt
 }
 
 Player.createPlayerFromDb = function (player) {
-    return new Player(player._id, player.username, player.firstname, player.lastname, player.vote, player.historicVotes, player.joinedAt);
+    return new Player(player._id._id, 
+                      player.username, 
+                      player.firstname, 
+                      player.lastname, 
+                      player.vote, 
+                      player.historicVotes, 
+                      player.joinedAt);
 } 
 
 Player.isAnyFriend = function (player) {

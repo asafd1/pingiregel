@@ -14,12 +14,14 @@ exports.init = function () {
 }
 
 exports.encryptSync = function (text) {
+    if (!cipher) exports.init();
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
     return encrypted;
 }
 
 exports.decryptSync = function (encrypted) {
+    if (!cipher) exports.init();
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;
@@ -32,11 +34,14 @@ exports.getPassword = function () {
 function readPass() {
     var lineReader = require('readline').createInterface({
         input: require('fs').createReadStream('./creds/pingiregel')
-      });
-      
-      lineReader.on('line', function (line) {
+    });
+    
+    lineReader.on('line', function (line) {
         password = line;
-      });
+    });      
 }
 
-readPass();
+readPass(); // this is async
+// password = "***";
+// exports.init();
+// console.log(exports.encryptSync("***"));
