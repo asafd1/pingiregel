@@ -116,7 +116,7 @@ exports.getPlayers = function () {
     return p.then((docs) => {
         logger.log(`found ${_.size(docs)} players`);
         return _.map(docs,(doc) => {
-            return Player.createPlayerFromDb(doc)
+            return Player.fromDb(doc)
         })
     });
 }

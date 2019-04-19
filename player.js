@@ -1,38 +1,37 @@
-var _ = require("underscore");
+class Player {
+    constructor(id, username, firstname, lastname, vote, historicVotes, joinedAt) {
+        this._id = id.toString(); // convert all IDs to string since friend's IDs are strings
+        this.username = username;
+        this.firstname = firstname;
+        this.lastname = lastname;
+        this.vote = vote;
+        this.friends = 0;
+        this.historicVotes = historicVotes;
+        this.joinedAt = joinedAt;
+        this.friends;
+    }
 
-// Constructor
-function Player(id, username, firstname, lastname, vote, historicVotes, joinedAt) {
-    this._id = id.toString(); // convert all IDs to string since friend's IDs are strings
-    this.username = username;
-    this.firstname = firstname;
-    this.lastname = lastname;
-    this.vote = vote;
-    this.friends = 0;
-    this.historicVotes = historicVotes;
-    this.joinedAt = joinedAt;
-    this.friends;
-
-    this.getId = function () {
+    getId() {
         return this._id;
     }
 
-    this.getFirstName = function () {
+    getFirstName() {
         return this.firstname;
     }
 
-    this.getLastName = function () {
+    getLastName() {
         return this.lastname;
     }
 
-    this.getVote = function () {
+    getVote() {
         return this.vote;
     }
 
-    this.resetVote = function () {
+    resetVote() {
         this.vote = "nill";
     }
 
-    this.setVote = function (gameId, vote) {
+    setVote(gameId, vote) {
         this.vote = vote;
         if (!this.historicVotes) {
             this.historicVotes = {};
@@ -40,39 +39,39 @@ function Player(id, username, firstname, lastname, vote, historicVotes, joinedAt
         this.historicVotes[gameId] = vote;
     }
     
-    this.setJoinedAt = function (time) {
+    setJoinedAt(time) {
         this.joinedAt = time;
     }
 
-    this.getFriends = function () {
+    getFriends() {
         return this.friends;
     }
 
-    this.isFriend = function (otherPlayer) {
+    isFriend(otherPlayer) {
         return (otherPlayer._id.startsWith(`${this._id}.friend`));
     }
     
-    this.setFriends = function (players) {
-        this.friends = _.filter(players, (player) => {
+    setFriends(players) {
+        this.friends = players.filter((player) => {
             return this.isFriend(player);
         });
     }
 
-    this.getNextFriendNumber = function () {
+    getNextFriendNumber() {
         if (!this.friends) {
             return 1;
         }
         return this.friends.length + 1;
     }
 
-    this.getNextFriendId = function () {
+    getNextFriendId() {
         if (!this.friends) {
             return 0;
         }
         return this._id + ".friend" + this.friends.length;
     }
 
-    this.getLastFriendId = function () {
+    getLastFriendId() {
         if (!this.friends) {
             return null;
         }
@@ -80,7 +79,7 @@ function Player(id, username, firstname, lastname, vote, historicVotes, joinedAt
     }
 }
 
-Player.createPlayerFromDb = function (player) {
+Player.fromDb = function (player) {
     return new Player(player._id._id, 
                       player.username, 
                       player.firstname, 
@@ -89,9 +88,5 @@ Player.createPlayerFromDb = function (player) {
                       player.historicVotes, 
                       player.joinedAt);
 } 
-
-Player.isAnyFriend = function (player) {
-    return (player._id.indexOf(`.friend`) > 0);
-}
 
 module.exports = Player;
