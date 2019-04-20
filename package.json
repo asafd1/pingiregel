@@ -12,10 +12,11 @@
     "underscore": "^1.9.1"
   },
   "devDependencies": {
+    "jest": "^24.7.1",
     "mongo-in-memory": "^0.0.5"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "start": "node server.js"
   },
   "repository": {

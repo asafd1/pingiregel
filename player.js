@@ -5,10 +5,8 @@ class Player {
         this.firstname = firstname;
         this.lastname = lastname;
         this.vote = vote;
-        this.friends = 0;
         this.historicVotes = historicVotes;
         this.joinedAt = joinedAt;
-        this.friends;
     }
 
     getId() {
