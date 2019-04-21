@@ -42,19 +42,30 @@ test('handle votes', () => {
 
 test('handle friends', () => {
     player = Player.fromDb(dbPlayer);
-    expect(player.getFriends()).toBeUndefined();
-    expect(player.getNextFriendId()).toBe(0);
+    expect(player.getFriends()).toEqual([]);
+    expect(player.getNextFriendNumber()).toBe(1);
     expect(player.getLastFriendId()).toBe(null);
-    otherPlayer = new Player ("123.friend.1", "123.friend.1", "adi", "gordon");
-    expect(player.isFriend(otherPlayer)).toBeTruthy();
-    otherPlayers = [new Player ("123.friend.1", "123.friend.1", "adi", "gordon"),
-                    new Player ("123.friend.2", "123.friend.2", "papi"),
-                    new Player ("456", "un2", "avi", "gez"),
-                    new Player ("789", "un3", "beni", "ganz"),
-                    ];
+
+    otherPlayers = [new Player ("456", "un2", "avi", "gez"),
+                    new Player ("789", "un3", "beni", "ganz")];
+
+    friend1 = { _id : player.getNextFriendId(), username : player.getNextFriendUsername() };
+    expect(player.isFriend(friend1)).toBeTruthy();
+
+    otherPlayers.push(new Player(friend1._id, friend1.username));
     player.setFriends(otherPlayers);
-    expect(player.getFriends()[0].getFirstName()).toBe("adi");
-    expect(player.getFriends()[1].getFirstName()).toBe("papi");
+    expect(player.getFriends().length).toBe(1);
+    expect(player.getFriends()[0].username).toBe("asaf's friend (1)");
+    
+    friend2 = { _id : player.getNextFriendId(), username : player.getNextFriendUsername() };
+    expect(player.isFriend(friend2)).toBeTruthy();
+
+    otherPlayers.push(new Player(friend2._id, friend2.username));
+    player.setFriends(otherPlayers);
+    expect(player.getFriends().length).toBe(2);
+    expect(player.getFriends()[0].username).toBe("asaf's friend (1)");
+    expect(player.getFriends()[1].username).toBe("asaf's friend (2)");
+
     expect(player.getNextFriendNumber()).toBe(3);
     expect(player.getNextFriendId()).toBe("123.friend2");
     expect(player.getLastFriendId()).toBe("123.friend1");

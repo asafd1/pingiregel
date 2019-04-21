@@ -254,8 +254,8 @@ function handleFriendVote(gameId, voterPlayer, vote, players, results) {
 
     if (vote == "plus1") {
         var id = voterPlayer.getNextFriendId();
-        var firstname = voterPlayer.getFirstName() + `'s friend (${voterPlayer.getNextFriendNumber()})`;
-        player = new Player (id, id, firstname, null);
+        var firstname = voterPlayer.getNextFriendUsername();
+        player = new Player (id, id, firstname);
         player.setVote(gameId, "yes");
         player.setJoinedAt(getNow());
         DB.addPlayer(player);

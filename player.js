@@ -1,12 +1,21 @@
 class Player {
     constructor(id, username, firstname, lastname, vote, historicVotes, joinedAt) {
         this._id = id.toString(); // convert all IDs to string since friend's IDs are strings
-        this.username = username;
+        this._username = username;
         this.firstname = firstname;
         this.lastname = lastname;
         this.vote = vote;
         this.historicVotes = historicVotes;
         this.joinedAt = joinedAt;
+        this.friends = [];
+    }
+
+    get username() {
+        return this._username;
+    }
+
+    set username(username) {
+        this._username = username;
     }
 
     getId() {
@@ -55,6 +64,10 @@ class Player {
         });
     }
 
+    getNextFriendUsername() {
+        return this.getFirstName() + `'s friend (${this.getNextFriendNumber()})`;
+    }
+
     getNextFriendNumber() {
         if (!this.friends) {
             return 1;
@@ -70,7 +83,7 @@ class Player {
     }
 
     getLastFriendId() {
-        if (!this.friends) {
+        if (this.friends.length == 0) {
             return null;
         }
         return this._id + ".friend" + (this.friends.length - 1);
