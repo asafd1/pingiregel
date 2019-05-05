@@ -13,7 +13,6 @@ var VERSION = "3.0";
 const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"];
 
 function getNow() {
-//    return new Date("2019-03-21 21:00:00");
     return new Date();
 }
 
@@ -24,18 +23,10 @@ function isMorning(now) {
 function isEvening(now) {
     return now.getHours() == 21;
 }
-
-function schedule() {
-    // handleGame();
-    cron.schedule('0 * * * *', () => {
-        handleGame();
-    });  
-}
   
 exports.init = function (db) {
     DB = db;
     BOT.init(db, {targetNumberOfPlayers:TARGET_NUMBER_OF_PLAYERS});
-    //schedule();
     return this;
 }
 
@@ -91,17 +82,17 @@ async function createNewGame() {
         logger.log("closing old game(s)");
         _.each(games, (game) => { 
             game.status = "closed";
-            logger.log("closing old game: " + game.getId());
+            logger.log("closing old game: " + game.id);
             
-            DB.updateGame(game.getId(), game);
-            BOT.closePoll(game.getMessageId());
+            DB.updateGame(game.id, game);
+            BOT.closePoll(game.messageId);
         });
 
         return getGameOptions().then(async (opts) => {
             var game = new Game(now, ...opts);
-            await DB.getGame(game.getId()).then(async (g) => {
+            await DB.getGame(game.id).then(async (g) => {
                 if (g) {
-                    await DB.deleteGame(g.getId());
+                    await DB.deleteGame(g.id);
                 } 
             });
             DB.addGame(game);
@@ -110,52 +101,21 @@ async function createNewGame() {
     });
 }
 
-function createGameIfNeeded(games) {
-    if (_.isEmpty(games)) {
-        var game = new Game();
-        resetPlayers();
-        DB.addGame(game);
-        return game;
-    }
-
-    var currentGame = _.max(games, (game) => {return game.getId()});
-    
-    _.each(games, (game, index, games) => { 
-        now = getNow();
-        if (game.time < now || game.getId() != currentGame.getId()) {
-            game.status = "closed";
-            logger.log("closing old game: " + game.getId());
-            
-            DB.updateGame(game.getId(), game);
-        }
-    });
-
-    games = _.filter(games, (game) => { return game.status == "open" });
-    if (_.isEmpty(games)) {
-        var game = new Game();
-        resetPlayers();
-        DB.addGame(game);
-        return game;
-    }
-
-    return currentGame;
-}
-
 exports.getCurrentGame = getCurrentGame;
 
 function getCurrentGame() {
     return DB.getGames("open").then((games) => {
-        var currentGame = _.max(games, (game) => {return game.getId()});
+        var currentGame = _.max(games, (game) => {return game.id});
         return currentGame;
     });
 }
 
 function updateGame(game, messageId, now) {
-    game.setMessageId(messageId);
+    game.messageId = messageId;
     if (now && now > 0) {
-        game.setLastSent(now);
+        game.lastSent = now;
     }
-    DB.updateGame(game.getId(), game);
+    DB.updateGame(game.id, game);
     return game;
 }
 
@@ -176,37 +136,6 @@ function sendPoll(game, now) {
         return updateGame(game, messageId, now);
     });
 }
-
-// function sendGame(game, now) {
-//     logger.log(`sendGame. gameId = ${game.getId()}`);
-//     var p;
-
-//     if (!game.getLastSent()) {
-//         game.setMessageId(null);
-//         p = sendPoll(game, now);
-//     }
-
-//     // sendPoll may update game (lastSent and messageId)
-//     if (p == null) {
-//         p = getCurrentGame();
-//     }
-//     p.then((game) => {
-//         if (now.getDay() >= daysOfWeek.indexOf("רביעי") && 
-//             now.getDay() <= daysOfWeek.indexOf("חמישי")) {
-//             var p = getResults();
-//             p.then((results) => {
-//                 htp = hasTargetPlayers(results);
-//                 if ((!htp && !game.getAllowFriends()) || 
-//                     (htp && game.getAllowFriends())) {
-//                         logger.log(`hasTargetPlayers = ${htp}. reverting allowFriends to '${!game.getAllowFriends()}'`);
-//                         game.setAllowFriends(!game.getAllowFriends());
-//                         DB.updateGame(game.getId(), game);
-//                         updatePoll(game, results);
-//                 }
-//             })
-//         }
-//     });
-// }
   
 function hasTargetPlayers(results) {
     return results && results.yes && results.yes >= TARGET_NUMBER_OF_PLAYERS;
@@ -372,8 +301,8 @@ function newGameCommand(msg) {
 }
 
 function setAllowedFriends(game, toggle) {
-    if (game.getAllowFriends() != toggle) {
-        game.setAllowFriends(toggle);
+    if (game.isAllowFriends != toggle) {
+        game.allowFriends = toggle;
         getResults().then((results) => {
             resendPoll(game, results)
         });

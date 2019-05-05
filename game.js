@@ -58,16 +58,20 @@ class Game {
         return this._id;
     }
 
+    set id(id) {
+        this._id = id;
+    }
+
+    get time() {
+        return _time;
+    }
+
     get dayOfWeek() {
-        return daysOfWeek[this._time.getDay()];
+        return this.constructor.daysOfWeek[this._time.getDay()];
     }
     
     get hour() {
-        return hour = (this._time.getHours() + (this._time.getTimezoneOffset() / 60) + IST) + ":00";
-    }
-
-    set id(id) {
-        this._id = id;
+        return (this._time.getHours() + (this._time.getTimezoneOffset() / 60) + this.constructor.IST) + ":00";
     }
 
     set chatId(chatId) {
@@ -76,6 +80,14 @@ class Game {
 
     get chatId() {
         return this._chatId;
+    }
+
+    set status(status) {
+        this._status = status;
+    }
+
+    get status() {
+        return this._status;
     }
 
     set messageId(messageId) {
@@ -90,7 +102,7 @@ class Game {
         this._allowFriends = allow;
     }
 
-    get allowFriends() {
+    get isAllowFriends() {
         return this._allowFriends;
     }
 
@@ -102,8 +114,12 @@ class Game {
         return this._lastSent;
     }
 
+    get venue() {
+        return this._venue;
+    }
+
     static fromDb(game) {
-        let g = new Game(game.time, game.hour, game.dayOfWeek, game.venue, game.lastSent, game.status, game.allowFriends, game.messageId);
+        let g = new Game(game._time, game._hour, game._dayOfWeek, game._venue, game._lastSent, game._status, game._allowFriends, game._messageId);
         g.id = game._id._id;
         g.chatId = game._id.chatId;
         return g;

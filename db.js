@@ -141,9 +141,9 @@ exports.getGames = function (_status) {
     logger.log(`getting games (by status=${_status})`);
     var opts = getFilterByChatId();
     if (_status) {
-        opts.status = _status;
+        opts._status = _status;
     }
-    return db.collection("games").find(opts).toArray().then((docs) => _.map(docs,(doc)=>Game.createGameFromDb(doc)));
+    return db.collection("games").find(opts).toArray().then((docs) => _.map(docs,(doc)=>Game.fromDb(doc)));
 }
 
 exports.getGame = function (id) {
@@ -151,7 +151,7 @@ exports.getGame = function (id) {
     logger.log("getting game by id: " + id);
     return db.collection("games").findOne({_id:getCompositeIdWithChatId(id)}).then((doc)=>{
         if (doc) {
-            var game = Game.createGameFromDb(doc);
+            var game = Game.fromDb(doc);
             logger.log("found game: " + JSON.stringify(game, null, 2));
             return game;
         }

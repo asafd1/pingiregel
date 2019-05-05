@@ -176,9 +176,9 @@ function getPollKeyboard(game, results, friendsButtons) {
 
   inline_keyboard = [];
   inline_keyboard.push(
-    [{"text": yesText, "callback_data":`poll.${game.getId()}.yes`},
-     {"text": maybeText, "callback_data":`poll.${game.getId()}.maybe`},
-     {"text": noText, "callback_data":`poll.${game.getId()}.no`}]);
+    [{"text": yesText, "callback_data":`poll.${game.id}.yes`},
+     {"text": maybeText, "callback_data":`poll.${game.id}.maybe`},
+     {"text": noText, "callback_data":`poll.${game.id}.no`}]);
   
   if (totalVotes.length > 0) {    
     if (friendsButtons) {
@@ -186,8 +186,8 @@ function getPollKeyboard(game, results, friendsButtons) {
       var minusFriendText = "-חבר"
   
       inline_keyboard.push(
-        [{"text": plusFriendText, "callback_data":`poll.${game.getId()}.plus1`},
-        {"text": minusFriendText, "callback_data":`poll.${game.getId()}.minus1`}]);
+        [{"text": plusFriendText, "callback_data":`poll.${game.id}.plus1`},
+        {"text": minusFriendText, "callback_data":`poll.${game.id}.minus1`}]);
     }
   }
 
@@ -223,7 +223,7 @@ function getLengthText(title, votes) {
 }
 
 function getText(game, results) {
-  var text = `מגיע למשחק ביום ${game.getDayOfWeek()} ב-${game.getHour()} ב${game.venue.title}?`;
+  var text = `מגיע למשחק ביום ${game.dayOfWeek} ב-${game.hour} ב${game.venue.title}?`;
 
   if (results) {
     text += "\n";
@@ -245,10 +245,10 @@ exports.closePoll = function (messageId) {
 }
 
 exports.sendPoll = function (game, results, resend = false) {
-  var messageId = game.getMessageId();
+  var messageId = game.messageId;
   logger.log(messageId ? "updating poll" : "sending poll");
 
-  inline_keyboard = getPollKeyboard(game, results, game.getAllowFriends());
+  inline_keyboard = getPollKeyboard(game, results, game.isAllowFriends);
   
   var text = getText(game, results);
   if (resend && messageId) {
