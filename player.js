@@ -88,16 +88,16 @@ class Player {
         }
         return this._id + ".friend" + (this.friends.length - 1);
     }
-}
 
-Player.fromDb = function (player) {
-    return new Player(player._id._id, 
-                      player.username, 
-                      player.firstname, 
-                      player.lastname, 
-                      player.vote, 
-                      player.historicVotes, 
-                      player.joinedAt);
-} 
+    static fromDb(player) {
+        return new Player(player._id._id, 
+                          player.username, 
+                          player.firstname, 
+                          player.lastname, 
+                          player.vote, 
+                          player.historicVotes, 
+                          player.joinedAt);
+    } 
+}
 
 module.exports = Player;

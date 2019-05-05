@@ -1,97 +1,113 @@
-const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
-const IST = 2;
 
-function getDefaultTime(hour = 17 /* 19:00 IST */, dayOfWeek = 4 /* Thursday */) {
-    var resultDate = new Date();
-    resultDate.setDate(resultDate.getDate() + (7 + dayOfWeek - resultDate.getDay()) % 7);
-    resultDate.setUTCHours(hour);
-    resultDate.setMinutes(0);
-    resultDate.setSeconds(0);
+class Game {
+    static get daysOfWeek() {
+        return ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+    }
 
-    return resultDate;
-}
+    static get IST() {
+        return 2;
+    }
 
-function getDefaultVenue() {
-    return venue = {
-        location : {
-            longtitude : 34.83800054,
-            latitude : 32.13038646
-        },
-        title	: "מרכז הטניס",
-        address	: "דרך הטניס 6, רמת השרון"
-    };
-}
+    // Calculate the game time. The result will be the next requested dayOfWeek after the given 'now'.
+    //  now - base time for calculation
+    //  hour - desired hour of the day
+    //  dayOfWeek - desired week day
+    static getDefaultTime(now, hour = 17 /* 19:00 IST */, dayOfWeek = 4 /* Thursday */) {
+        var resultDate = new Date(now.getTime());
+        let dayOfMonth = resultDate.getDate() + (dayOfWeek - resultDate.getDay());
+        if (dayOfMonth < resultDate.getDate()) {
+            dayOfMonth += 7;
+        }
+        resultDate.setDate(dayOfMonth);
+        resultDate.setUTCHours(hour);
+        resultDate.setMinutes(0);
+        resultDate.setSeconds(0);
 
-// Constructor
-function Game(hour, dayOfWeek, venue, lastSent, status, allowFriends, messageId) {
-    this.time = getDefaultTime(hour, dayOfWeek);
+        return resultDate;
+    }
 
-    if (!venue) {
-        this.venue = getDefaultVenue();
-    } else {
-        this.venue = venue;
+    static get defaultVenue() {
+        let venue = {
+            location : {
+                longtitude : 34.83800054,
+                latitude : 32.13038646
+            },
+            title	: "מרכז הטניס",
+            address	: "דרך הטניס 6, רמת השרון"
+        };
+        return venue;
     }
     
-    this._id = (this.time.getFullYear() * 10000) + ((this.time.getMonth()+1) * 100) + (this.time.getDate());
-    this.lastSent = lastSent;
-    this.status = status ? status : "open";
-    this.messageId = messageId;
-    this.allowFriends = allowFriends ? allowFriends : false;
+    constructor(now, hour, dayOfWeek, venue, lastSent, status, allowFriends, messageId) {
+        this._time = Game.getDefaultTime(now, hour, dayOfWeek);
+    
+        if (!venue) {
+            this._venue = Game.defaultVenue;
+        } else {
+            this._venue = venue;
+        }
+        
+        this._id = (this._time.getFullYear() * 10000) + ((this._time.getMonth()+1) * 100) + (this._time.getDate());
+        this._lastSent = lastSent;
+        this._status = status ? status : "open";
+        this._messageId = messageId;
+        this._allowFriends = allowFriends ? allowFriends : false;
+    }
 
-    this.getId = function () {
+    get id() {
         return this._id;
     }
 
-    this.getDayOfWeek = function () {
-        return daysOfWeek[this.time.getDay()];
+    get dayOfWeek() {
+        return daysOfWeek[this._time.getDay()];
     }
     
-    this.getHour = function () {
-        return hour = (this.time.getHours() + (this.time.getTimezoneOffset() / 60) + IST) + ":00";
+    get hour() {
+        return hour = (this._time.getHours() + (this._time.getTimezoneOffset() / 60) + IST) + ":00";
     }
 
-    this.setId = function (_id) {
-        this._id = _id;
+    set id(id) {
+        this._id = id;
     }
 
-    this.setChatId = function (chatId) {
-        this.chatId = chatId;
+    set chatId(chatId) {
+        this._chatId = chatId;
     }
 
-    this.getChatId = function () {
-        return this.chatId;
+    get chatId() {
+        return this._chatId;
     }
 
-    this.setMessageId = function (messageId) {
-        this.messageId = messageId;
+    set messageId(messageId) {
+        this._messageId = messageId;
     }
 
-    this.getMessageId = function () {
-        return this.messageId;
+    get messageId() {
+        return this._messageId;
     }
 
-    this.setAllowFriends = function (allow) {
-        this.allowFriends = allow;
+    set allowFriends(allow) {
+        this._allowFriends = allow;
     }
 
-    this.getAllowFriends = function () {
-        return this.allowFriends;
+    get allowFriends() {
+        return this._allowFriends;
     }
 
-    this.setLastSent = function (time) {
-        this.lastSent = time;
+    set lastSent(time) {
+        this._lastSent = time;
     }
 
-    this.getLastSent = function () {
-        return this.lastSent;
+    get lastSent() {
+        return this._lastSent;
+    }
+
+    static fromDb(game) {
+        let g = new Game(game.time, game.hour, game.dayOfWeek, game.venue, game.lastSent, game.status, game.allowFriends, game.messageId);
+        g.id = game._id._id;
+        g.chatId = game._id.chatId;
+        return g;
     }
 }
-
-Game.createGameFromDb = function (game) {
-    g = new Game(game.hour, game.dayOfWeek, game.venue, game.lastSent, game.status, game.allowFriends, game.messageId);
-    g.setId(game._id._id);
-    g.setChatId(game._id.chatId);
-    return g;
-} 
 
 module.exports = Game;

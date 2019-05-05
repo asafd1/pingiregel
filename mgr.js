@@ -85,6 +85,7 @@ function getGameOptions() {
 async function createNewGame() {
     resetPlayers();
 
+    let now = new Date();
     p = DB.getGames("open");
     return p.then(async (games) => {
         logger.log("closing old game(s)");
@@ -97,7 +98,7 @@ async function createNewGame() {
         });
 
         return getGameOptions().then(async (opts) => {
-            var game = new Game(...opts);
+            var game = new Game(now, ...opts);
             await DB.getGame(game.getId()).then(async (g) => {
                 if (g) {
                     await DB.deleteGame(g.getId());
