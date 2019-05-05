@@ -20,7 +20,8 @@
   },
   "scripts": {
     "test": "jest",
-    "start": "node server.js"
+    "start": "node server.js",
+    "mongo-in-mem": "pkill -f mongoinmem.js ; sleep 1 ; node mongoinmem.js $TOKEN $WEBHOOK_URL &"
   },
   "repository": {
     "type": "git",
