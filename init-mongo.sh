@@ -16,6 +16,7 @@ mongo pingiregel --eval "db.settings.findOne( { key: 'baseUrl' } );"
 # update game: db.games.update({ "_id._id" : 20190404 }, { $set: { messageId: 999 } });
 # update player: db.players.update({ "_id._id" : "123456789" }, { $set: { vote : "nill" }});
 # update chat: db.chats.updateOne({_id:-123456789}, {$set:{ admins : [123456789], venue : { title: "בית השאנטי" }, hour: 17, dayOfWeek : 2}}, {"upsert": true});
+# add admin to chat: db.chats.updateOne({_id:-1001312698335}, {$set:{ admins : [84374572] }}, {"upsert": true});
 
 # mongo via node & MongoClient
 # p = db.collection("players").insertOne(

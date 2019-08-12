@@ -196,3 +196,8 @@ exports.getChat = function (id) {
         }
     })
 }
+
+exports.getChats = function () {
+    logger.log("getting all chats");
+    return db.collection("chats").find({}).toArray().then((docs) => _.map(docs,(doc)=>new Chat(doc)));
+}

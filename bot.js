@@ -55,7 +55,8 @@ exports.getChatSettings = function (id) {
 
 function getAdmins(){
   let admins = []
-  let chat = chats.find(_chat => _chat.id == getChatId());
+  chatId = getChatId();
+  let chat = chats.find(_chat => _chat.id == chatId);
   if (chat) {
     admins = chat.admins;
   }
@@ -80,6 +81,8 @@ exports.isAdmin = function (user) {
 
 exports.init = function (db, config) {
   DB = db;
+  DB.getChats()
+  .then(_chats => chats = _chats);
   DB.getMisc("token")
   .then((value) => {return value;})
   .then((doc) => initBot(doc.value))
