@@ -1,0 +1,12 @@
+body {
+  font: 14px "Century Gothic", Futura, sans-serif;
+  margin: 20px;
+}
+
+.navbar-brand img {
+  height: 20px;
+}
+        
+.filtered-list .filter {
+  margin-bottom: 21px;
+}

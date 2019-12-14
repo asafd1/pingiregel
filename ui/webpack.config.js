@@ -6,18 +6,18 @@ module.exports = {
         port: 3000,
         host: "0.0.0.0"
     },
-    entry: './ui/index.js',
+    entry: './App.jsx',
     output: {
         filename: 'bundle.[hash].js',
         path: path.resolve(__dirname, 'dist')
     },
     plugins: [
         new HtmlWebpackPlugin({
-            template: './ui/index.html'
+            template: './App.html'
         })
     ],
     resolve: {
-        modules: [__dirname, 'ui', 'node_modules'],
+        modules: [__dirname, 'node_modules'],
         extensions: ['*', '.js', '.jsx', '.tsx', '.ts'],
       },
     module: {

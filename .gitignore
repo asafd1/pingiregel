@@ -3,3 +3,4 @@ package-lock.json
 .vscode/launch.json
 creds/
 sshRemote.sh
+ui/dist/
