@@ -1,20 +1,6 @@
 import React from 'react';
 import ListGroup from 'react-bootstrap/ListGroup'
 
-// class ListItem extends ListGroup.Item {
-//     constructor(props) {
-//         this.action = true;
-//         this.active = true;
-//         super(props);
-//     }
-
-//     render() {
-//         return(
-//             <li className="list-group-item" onClick={() => this.props.onClick()}>{this.props.children}</li>
-//         );
-//     }
-// }
-
 class FilteredList extends React.Component {
     constructor(props) {
         super(props);
@@ -37,38 +23,31 @@ class FilteredList extends React.Component {
     handleClickItem(i) {
         if (this.state.selected == i) {
             this.setState({ selected: -1 });
-            this.handleItemDeselected(i);
+            this.props.handleItemDeselected(i);
         } else {
             if (this.state.selected >= 0) {
-                this.handleItemDeselected(this.state.selected);
+                this.props.handleItemDeselected(this.state.selected);
             }
             this.setState({ selected: i });
-            this.handleItemSelected(i);
+            this.props.handleItemSelected(i);
         }
-    }
-
-    handleItemSelected(i) {
-        console.log(`${this.props.items[i]} was selected`);
-    }
-
-    handleItemDeselected(i) {
-        console.log(`${this.props.items[i]} was unselected`);
     }
 
     render() {
         return (
             <div className="list filtered-list">
                 <input className="filter form-control" onInput={this.handleSearchInput.bind(this)} type="text" placeholder="Search for..."/>
-                <ul className="list-group">
+                <ListGroup>
                     {this.state.items.map((item, i) => {
                         return(<ListGroup.Item 
+                            key={i}
                             action
                             active={this.state.selected == i}
                             onClick={() => this.handleClickItem(i)}>
                             {item}
                             </ListGroup.Item>);
                     })}
-                </ul>
+                </ListGroup>
             </div>
         );
     }

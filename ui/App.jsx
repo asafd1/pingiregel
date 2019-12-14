@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import 'bootstrap/dist/css/bootstrap.css';
 import './App.css';
-import FilteredList from './components/FilteredList.jsx';
+import EditableListItems from './components/EditableListItems.jsx';
 
 var items = [
   'apple',
@@ -15,7 +15,7 @@ var items = [
 ];
 
 ReactDOM.render(
-  <FilteredList items={items}/>, 
+  <EditableListItems items={items}/>, 
   document.getElementById('root')
 );
 
