@@ -3,21 +3,21 @@ const path = require('path');
 
 module.exports = {
     devServer: {
-        host: "0.0.0.0",
-        port: 8080 
+        port: 3000,
+        host: "0.0.0.0"
     },
-    entry: './src/index.js',
+    entry: './ui/index.js',
     output: {
         filename: 'bundle.[hash].js',
         path: path.resolve(__dirname, 'dist')
     },
     plugins: [
         new HtmlWebpackPlugin({
-            template: './index.html'
+            template: './ui/index.html'
         })
     ],
     resolve: {
-        modules: [__dirname, 'src', 'node_modules'],
+        modules: [__dirname, 'ui', 'node_modules'],
         extensions: ['*', '.js', '.jsx', '.tsx', '.ts'],
       },
     module: {

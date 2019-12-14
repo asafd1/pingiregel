@@ -7,8 +7,16 @@ const DBNAME = "pingiregel";
 
 var mongoServerInstance = new MongoInMemory(27017);
 
-const token = process.argv[2];
-const baseUrl = process.argv[3];
+if (process.env.TELEGRAM_TOKEN == undefined || process.env.BASE_URL == undefined) {
+    console.log("missing env variables: TELEGRAM_TOKEN & BASE_URL");
+    console.log("Use:");
+    console.log("export TELEGRAM_TOKEN=<token>");
+    console.log("export BASE_URL=<ngrok-url>");
+    process.exit();
+  }
+  
+const token   = process.env.TELEGRAM_TOKEN;
+const baseUrl = process.env.BASE_URL;
 
 function addKey(collection, _key, _value) {
     console.log("add key " + _key);
@@ -28,8 +36,10 @@ function init(db) {
 }
 
 function connect () {
-    MongoClient.connect(mongoServerInstance.getMongouri(), function(err, mongodb) {
-        console.log(err);
+    MongoClient.connect(mongoServerInstance.getMongouri(), {useNewUrlParser:true}, function(err, mongodb) {
+        if (err != undefined && err != null) {
+            console.log(err);
+        }
         
         db = mongodb.db(DBNAME);
         console.log("connected to db: "+ db.databaseName);

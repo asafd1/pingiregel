@@ -12,6 +12,11 @@ app.use(bodyParser.json());
 app.use(httpContext.middleware);
 app.use(httpContext.middleware);
 
+// production mode
+if (process.argv[2] == undefined) {
+  app.use(express.static("ui/dist"));
+}
+
 // TODO:
 // mongo auth + app auth + encryption
 // schedule
