@@ -3,6 +3,8 @@ body {
   margin: 20px;
 }
 
+button:focus {outline:0;}
+
 .navbar-brand img {
   height: 20px;
 }

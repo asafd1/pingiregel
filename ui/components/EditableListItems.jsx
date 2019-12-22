@@ -9,10 +9,24 @@ class EditableListItems extends React.Component {
     constructor(props) {    
         super(props);
         this.state = {
-            items: this.props.items,
+            items: [],
             selected: -1,
             dirty: false
         };
+    }
+
+    async getItems() {
+        const response =
+            await fetch(this.props.itemsEndpoint
+                //   ,{ headers: {'Content-Type': 'application/json'}}
+            )
+        console.log(response.body);
+        return await response.json();
+    }
+
+    componentDidMount() {
+        this.getItems().then((response) => 
+            this.setState({items : response.map((item) => {return item.firstname;})}));
     }
 
     handleItemSelected(i) {
@@ -20,7 +34,6 @@ class EditableListItems extends React.Component {
             selected : i,
             dirty : false
         });
-        console.log(`${this.props.items[i]} was selected`);
     }
 
     handleItemDeselected(i) {
@@ -28,7 +41,6 @@ class EditableListItems extends React.Component {
             selected : -1,
             dirty : false
         });
-        console.log(`${this.props.items[i]} was unselected`);
     }
 
     setDirty(dirty) {
@@ -38,12 +50,12 @@ class EditableListItems extends React.Component {
     }
 
     renderUser() {
-        const user = {
-            username: this.state.items[this.state.selected],
-            firstname: "fn " + this.state.items[this.state.selected],
-            lastname: "ln " + this.state.items[this.state.selected]
-        }
         if (this.state.selected >= 0) {
+            const user = {
+                username: this.state.items[this.state.selected],
+                firstname: "fn " + this.state.items[this.state.selected],
+                lastname: "ln " + this.state.items[this.state.selected]
+            }
             return (
                 <Col md="6" style={{ marginTop: '59px', backgroundColor: 'snow', height: '309px' }}>
                     <EditableUser 
