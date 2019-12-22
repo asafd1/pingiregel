@@ -12,6 +12,7 @@ const CHAT_TITLE_COL = "chatTitle";
 
 var mongouri = "mongodb://localhost:27017/";
 var db;
+var mongodbConnection;
 
 exports.prepareForSend = function (response) {
     if (response.ops && response.result) {
@@ -22,10 +23,15 @@ exports.prepareForSend = function (response) {
 
 exports.connect = function () {
     return (MongoClient.connect(mongouri, { useNewUrlParser: true }).then((mongodb) => {
+        mongodbConnection = mongodb;
         db = mongodb.db(DBNAME);
         logger.log("connected to db: "+ db.databaseName);
         return this;
     }));
+}
+
+exports.close = function () {
+    mongodbConnection.close();
 }
 
 // SETTINGS
@@ -80,38 +86,28 @@ exports.setMisc = function (setting) {
 }
 
 // PLAYERS
-function getCurrentMessage() {
-    var message = httpContext.get('message');
-    if (!message) {
-        throw "could not find current message on httpContext";
-    }
-    return message;
-}
-
-function getCompositeIdWithChatId(id) {
+function getCompositeIdWithChatId(chatId, id) {
     var _id = {};
     _id['_id'] = id;
-    _id[CHAT_ID_COL] = getCurrentMessage().chat.id;
+    _id[CHAT_ID_COL] = chatId;
     return _id;
 }
 
-function cloneObjectwithCompositeIdWithChatId(obj) {
+function cloneObjectwithCompositeIdWithChatId(chatId, obj) {
     var newObj = Object.assign({}, obj);
-    newObj._id = getCompositeIdWithChatId(obj._id);
-    newObj[CHAT_TITLE_COL] = httpContext.get('message').chat.title; // nice to have not mandatory
+    newObj._id = getCompositeIdWithChatId(chatId, obj._id);
     return newObj;
 }
 
-function getFilterByChatId() {
-    chatId = getCurrentMessage().chat.id;
+function getFilterByChatId(chatId) {
     filter = {};
     filter[`_id.${CHAT_ID_COL}`] = chatId;
     return filter;
 }
 
-exports.getPlayers = function () {
-    logger.log("getting all players for this chat");
-    var opts = getFilterByChatId();
+exports.getPlayers = function (chatId) {
+    logger.log("getting all players for this chat: " + chatId);
+    var opts = getFilterByChatId(chatId);
     p = db.collection("players").find(opts).toArray();
     return p.then((docs) => {
         logger.log(`found ${_.size(docs)} players`);
@@ -121,35 +117,40 @@ exports.getPlayers = function () {
     });
 }
 
-exports.addPlayer = function (player) {
-    logger.log("adding player: " + player);
-    return db.collection("players").insertOne(cloneObjectwithCompositeIdWithChatId(player));
+exports.getPlayer = function (chatId, id) {
+    logger.log("gettinf player by id: " + id);
+    return db.collection("players").findOne({_id:getCompositeIdWithChatId(chatId, id)});
 }
 
-exports.updatePlayer = function (id, player) {
+exports.addPlayer = function (chatId, player) {
+    logger.log("adding player: " + JSON.stringify(player));
+    return db.collection("players").insertOne(cloneObjectwithCompositeIdWithChatId(chatId, player));
+}
+
+exports.updatePlayer = function (chatId, id, player) {
     logger.log("updating player: " + JSON.stringify(player, null, 2));
-    return db.collection("players").updateOne({_id:getCompositeIdWithChatId(id)}, { $set: cloneObjectwithCompositeIdWithChatId(player) });
+    return db.collection("players").updateOne({_id:getCompositeIdWithChatId(chatId, id)}, { $set: cloneObjectwithCompositeIdWithChatId(chatId, player) });
 }
 
-exports.deletePlayer = function (id) {
+exports.deletePlayer = function (chatId, id) {
     logger.log("delete player by id: " + id);
-    return db.collection("players").deleteOne({_id:getCompositeIdWithChatId(id)});
+    return db.collection("players").deleteOne({_id:getCompositeIdWithChatId(chatId, id)});
 }
 
 // GAMES
-exports.getGames = function (_status) {
+exports.getGames = function (chatId, _status) {
     logger.log(`getting games (by status=${_status})`);
-    var opts = getFilterByChatId();
+    var opts = getFilterByChatId(chatId);
     if (_status) {
         opts.status = _status;
     }
     return db.collection("games").find(opts).toArray().then((docs) => _.map(docs,(doc)=>Game.createGameFromDb(doc)));
 }
 
-exports.getGame = function (id) {
+exports.getGame = function (chatId, id) {
     id = parseInt(id);
     logger.log("getting game by id: " + id);
-    return db.collection("games").findOne({_id:getCompositeIdWithChatId(id)}).then((doc)=>{
+    return db.collection("games").findOne({_id:getCompositeIdWithChatId(chatId, id)}).then((doc)=>{
         if (doc) {
             var game = Game.createGameFromDb(doc);
             logger.log("found game: " + JSON.stringify(game, null, 2));
@@ -159,19 +160,19 @@ exports.getGame = function (id) {
     });
 }
 
-exports.addGame = function (game) {
+exports.addGame = function (chatId, game) {
     logger.log("adding game: " + JSON.stringify(game, null, 2));
-    p = db.collection("games").insertOne(cloneObjectwithCompositeIdWithChatId(game));
+    p = db.collection("games").insertOne(cloneObjectwithCompositeIdWithChatId(chatId, game));
     return p;
 }
 
-exports.updateGame = function (id, game) {
+exports.updateGame = function (chatId, id, game) {
     logger.log("updating game by id: " + id);
     logger.log("game updated to: " + JSON.stringify(game));
-    return db.collection("games").updateOne({_id:getCompositeIdWithChatId(id)}, { $set: cloneObjectwithCompositeIdWithChatId(game) });
+    return db.collection("games").updateOne({_id:getCompositeIdWithChatId(chatId, id)}, { $set: cloneObjectwithCompositeIdWithChatId(chatId, game) });
 }
 
-exports.deleteGame = function (id) {
+exports.deleteGame = function (chatId, id) {
     logger.log("deleting game by id: " + id);
     return db.collection("games").deleteOne({_id:getCompositeIdWithChatId(id)});
 }

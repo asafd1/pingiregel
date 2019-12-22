@@ -45,16 +45,16 @@ exports.getBot = function () {
 
 function resetPlayer(player) {
     if (Player.isAnyFriend(player)) {
-        DB.deletePlayer(player.getId());
+        DB.deletePlayer(getCurrentMessage().chat.id, player.getId());
         return;
     }
 
     player.resetVote();
-    DB.updatePlayer(player.getId(), player);
+    DB.updatePlayer(getCurrentMessage().chat.id, player.getId(), player);
 }
 
 function resetPlayers() {
-    DB.getPlayers().then((players) => {
+    DB.getPlayers(getCurrentMessage().chat.id).then((players) => {
         _.forEach(players, (player) => {
             resetPlayer(player);
         })
@@ -85,14 +85,14 @@ function getGameOptions() {
 async function createNewGame() {
     resetPlayers();
 
-    p = DB.getGames("open");
+    p = DB.getGames(getCurrentMessage().chat.id, "open");
     return p.then(async (games) => {
         logger.log("closing old game(s)");
         _.each(games, (game) => { 
             game.status = "closed";
             logger.log("closing old game: " + game.getId());
             
-            DB.updateGame(game.getId(), game);
+            DB.updateGame(getCurrentMessage().chat.id, game.getId(), game);
             BOT.closePoll(game.getMessageId());
         });
 
@@ -100,10 +100,10 @@ async function createNewGame() {
             var game = new Game(...opts);
             await DB.getGame(game.getId()).then(async (g) => {
                 if (g) {
-                    await DB.deleteGame(g.getId());
+                    await DB.deleteGame(getCurrentMessage().chat.id, g.getId());
                 } 
             });
-            DB.addGame(game);
+            DB.addGame(getCurrentMessage().chat.id, game);
             return game;
         });
     });
@@ -113,7 +113,7 @@ function createGameIfNeeded(games) {
     if (_.isEmpty(games)) {
         var game = new Game();
         resetPlayers();
-        DB.addGame(game);
+        DB.addGame(getCurrentMessage().chat.id, game);
         return game;
     }
 
@@ -125,7 +125,7 @@ function createGameIfNeeded(games) {
             game.status = "closed";
             logger.log("closing old game: " + game.getId());
             
-            DB.updateGame(game.getId(), game);
+            DB.updateGame(getCurrentMessage().chat.id, game.getId(), game);
         }
     });
 
@@ -133,7 +133,7 @@ function createGameIfNeeded(games) {
     if (_.isEmpty(games)) {
         var game = new Game();
         resetPlayers();
-        DB.addGame(game);
+        DB.addGame(getCurrentMessage().chat.id, game);
         return game;
     }
 
@@ -143,7 +143,7 @@ function createGameIfNeeded(games) {
 exports.getCurrentGame = getCurrentGame;
 
 function getCurrentGame() {
-    return DB.getGames("open").then((games) => {
+    return DB.getGames(getCurrentMessage().chat.id, "open").then((games) => {
         var currentGame = _.max(games, (game) => {return game.getId()});
         return currentGame;
     });
@@ -154,7 +154,7 @@ function updateGame(game, messageId, now) {
     if (now && now > 0) {
         game.setLastSent(now);
     }
-    DB.updateGame(game.getId(), game);
+    DB.updateGame(getCurrentMessage().chat.id, game.getId(), game);
     return game;
 }
 
@@ -199,7 +199,7 @@ function sendPoll(game, now) {
 //                     (htp && game.getAllowFriends())) {
 //                         logger.log(`hasTargetPlayers = ${htp}. reverting allowFriends to '${!game.getAllowFriends()}'`);
 //                         game.setAllowFriends(!game.getAllowFriends());
-//                         DB.updateGame(game.getId(), game);
+//                         DB.updateGame(getCurrentMessage().chat.id, game.getId(), game);
 //                         updatePoll(game, results);
 //                 }
 //             })
@@ -258,12 +258,12 @@ function handleFriendVote(gameId, voterPlayer, vote, players, results) {
         player = new Player (id, id, firstname, null);
         player.setVote(gameId, "yes");
         player.setJoinedAt(getNow());
-        DB.addPlayer(player);
+        DB.addPlayer(getCurrentMessage().chat.id, player);
         return player;
     } else {
         var id = voterPlayer.getLastFriendId();
         if (id) {
-            DB.deletePlayer(id);
+            DB.deletePlayer(getCurrentMessage().chat.id, id);
         }
         results["yes"] = _.reject(results["yes"], (p) => {return p.getId() == id});
         return null;
@@ -278,7 +278,7 @@ function handlePlayerVote(gameId, player, vote, results) {
 
     if (oldVote != vote) {
         player.setVote(gameId, vote);
-        DB.updatePlayer(player.getId(), player);
+        DB.updatePlayer(getCurrentMessage().chat.id, player.getId(), player);
     }
 
     return player;
@@ -290,7 +290,7 @@ function getNewResults(gameId, players, from, vote) {
     if (!player) {
         player = new Player (from.id, from.username, from.first_name, from.last_name);
         player.setJoinedAt(getNow());
-        DB.addPlayer(player);
+        DB.addPlayer(getCurrentMessage().chat.id, player);
     }
 
     if (isFriendVote(vote)) {
@@ -311,13 +311,13 @@ function getNewResults(gameId, players, from, vote) {
 }
 
 function handleVote (gameId, from, vote) {
-    return DB.getPlayers().then((players) => {
+    return DB.getPlayers(getCurrentMessage().chat.id).then((players) => {
         return getNewResults(gameId, players, from, vote);
     });
 }
 
 function getResults () {
-    return DB.getPlayers().then((players) => {
+    return DB.getPlayers(getCurrentMessage().chat.id).then((players) => {
       var results = _.groupBy(players, "vote");
       return results;
     });
@@ -336,7 +336,7 @@ function handleCallbackQuery(callbackQuery) {
             p = getResults();
         }
 
-        p.then((results) => DB.getGame(gameId).then((game) => {
+        p.then((results) => DB.getGame(getCurrentMessage().chat.id, gameId).then((game) => {
             if (game) {
                 updatePoll(game, results);
             }
@@ -346,7 +346,7 @@ function handleCallbackQuery(callbackQuery) {
         var parts = callbackQuery.data.split(".");
         var gameId = parts[1];
         p = getResults();
-        p.then((results) => DB.getGame(gameId).then((game) => {
+        p.then((results) => DB.getGame(getCurrentMessage().chat.id, gameId).then((game) => {
             updatePoll(game, results, expand = (parts[0]=="expand"))
         }));
     }

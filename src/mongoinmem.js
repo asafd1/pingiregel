@@ -3,16 +3,12 @@ const MongoClient = require('mongodb').MongoClient;
 const MongoInMemory = require('mongo-in-memory');
 const DBNAME = "pingiregel";
 
-// To start mongo: node mongoinmem.js <token> <url> &
-
 var mongoServerInstance = new MongoInMemory(27017);
 
 if (process.env.TELEGRAM_TOKEN == undefined || process.env.BASE_URL == undefined) {
-    console.log("missing env variables: TELEGRAM_TOKEN & BASE_URL");
-    console.log("Use:");
+    console.log("To set token and base url, use:");
     console.log("export TELEGRAM_TOKEN=<token>");
     console.log("export BASE_URL=<ngrok-url>");
-    process.exit();
   }
   
 const token   = process.env.TELEGRAM_TOKEN;

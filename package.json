@@ -17,9 +17,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/server.js",
-    "stop": "(pkill -f server.js || true) && (pkill -f mongoinmem.js || true)",
-    "server": "npm run stop && npm run mongoinmem && node src/server.js local &",
-    "mongoinmem": "node src/mongoinmem.js &"
+    "stop": "(pkill -f src/server.js || true) && (pkill -f mongoinmem.js || true)",
+    "server": "npm run stop && sleep 1 && npm run mongoinmem && sleep 1 && node src/server.js local &",
+    "mongoinmem": "node src/mongoinmem.js &",
+    "testdata": "node test/setTestData.js"
   },
   "repository": {
     "type": "git",

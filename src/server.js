@@ -52,6 +52,9 @@ if (process.argv[2] == "local") {
 }
 
 function sendResponse(response, value) {
+  if (process.argv[2] == "local") {
+    response.set('Access-Control-Allow-Origin', '*');
+  }
   if (value) {
     response.send(DB.prepareForSend(value));
   } else {
@@ -130,35 +133,53 @@ app.route('/misc')
   p.then((value) => {sendResponse(response, value)});
 });
 
-app.route('/games')
+app.route('/chats/:chatId/games')
 .get(function(request, response, next) {
-  p = DB.getGames();
+  p = DB.getGames(Number(request.params.chatId));
   p.then((value) => {sendResponse(response, value)});
 })
 .post(function(request, response, next) {
-  p = DB.addGame(request.body);
+  p = DB.addGame(Number(request.params.chatId), request.body);
   p.then((value) => {sendResponse(response, value)});
 });
 
-app.route('/games/:id')
+app.route('/chats/:chatId/games/:id')
+.put(function(request, response, next) {
+  p = DB.updateGame(Number(request.params.chatId), request.params.id);
+  p.then((value) => {sendResponse(response, value)});
+})
 .delete(function(request, response, next) {
-  p = DB.deleteGame(request.params.id);
+  p = DB.deleteGame(Number(request.params.chatId), request.params.id);
   p.then((value) => {sendResponse(response, value)});
 });
 
-app.route('/players')
+app.route('/chats')
 .get(function(request, response, next) {
-  p = DB.getPlayers();
+  p = DB.getChats();
+  p.then((value) => {sendResponse(response, value)});
+});
+
+app.route('/chats/:chatId/players')
+.get(function(request, response, next) {
+  p = DB.getPlayers(Number(request.params.chatId));
   p.then((value) => {sendResponse(response, value)});
 })
 .post(function(request, response, next) {
-  p = DB.addPlayer(request.body);
+  p = DB.addPlayer(Number(request.params.chatId), request.body);
   p.then((value) => {sendResponse(response, value)});
 });
 
-app.route('/players/:id')
+app.route('/chats/:chatId/players/:id')
+.get(function(request, response, next) {
+  p = DB.getPlayer(Number(request.params.chatId), request.params.id);
+  p.then((value) => {sendResponse(response, value)});
+})
 .delete(function(request, response, next) {
-  p = DB.deletePlayer(request.params.id);
+  p = DB.deletePlayer(Number(request.params.chatId), request.params.id);
+  p.then((value) => {sendResponse(response, value)});
+})
+.put(function(request, response, next) {
+  p = DB.updatePlayer(Number(request.params.chatId), request.params.id);
   p.then((value) => {sendResponse(response, value)});
 });
 
