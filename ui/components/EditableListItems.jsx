@@ -1,6 +1,6 @@
 import React from 'react';
 import FilteredList from './FilteredList.jsx';
-import EditableUser from './EditableUser.jsx';
+import EditableItem from './EditableItem.jsx';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -58,10 +58,10 @@ class EditableListItems extends React.Component {
             }
             return (
                 <Col md="6" style={{ marginTop: '59px', backgroundColor: 'snow', height: '309px' }}>
-                    <EditableUser 
+                    <EditableItem 
                         user={user} 
                         dirty={this.state.dirty} 
-                        setDirty={this.setDirty.bind(this)}></EditableUser>
+                        setDirty={this.setDirty.bind(this)}></EditableItem>
                 </Col>
             )
         }

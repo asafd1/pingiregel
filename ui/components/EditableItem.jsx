@@ -7,9 +7,8 @@ import ButtonToolbar from 'react-bootstrap/ButtonToolbar';
 import Form from 'react-bootstrap/Form';
 import FormGroup from 'react-bootstrap/FormGroup';
 import FormLabel from 'react-bootstrap/FormLabel';
-import FormControl from 'react-bootstrap/FormControl';
 
-class EditableUser extends React.Component {
+class EditableItem extends React.Component {
     constructor(props) {
         super(props);
     }
@@ -99,4 +98,4 @@ class EditableUser extends React.Component {
     }
 }
 
-export default EditableUser;
+export default EditableItem;
