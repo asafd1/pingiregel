@@ -1,5 +1,6 @@
 import React from 'react';
 import ListGroup from 'react-bootstrap/ListGroup'
+var _ = require("underscore");
 
 const KEY_ESC = 27;
 const KEY_UP = 38;
@@ -9,11 +10,27 @@ class FilteredList extends React.Component {
     constructor(props) {
         super(props);
         this.state = { 
+            allItems: this.props.items,
             filteredItems: this.props.items,
             selected: -1
         };
     }
 
+    setItems(items) {
+        this.setState({ allItems: items });
+    }
+
+    static getDerivedStateFromProps(nextProps, prevState){
+        if (_.isEqual(nextProps.items, prevState.allItems)){
+            return null;
+        }
+          
+        return { 
+            allItems : nextProps.items,
+            filteredItems : nextProps.items
+        };
+    }
+    
     handleSearchInput(e) {
         var searchText = e.target.value;
         
