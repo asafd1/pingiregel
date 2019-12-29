@@ -1,11 +1,4 @@
 import React from 'react';
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
-import Button from 'react-bootstrap/Button';
-import Form from 'react-bootstrap/Form';
-import FormGroup from 'react-bootstrap/FormGroup';
-import FormLabel from 'react-bootstrap/FormLabel';
 
 class Editable extends React.Component {
     constructor(props) {
@@ -25,6 +18,9 @@ class Editable extends React.Component {
     }
 
     handleKeyDown(e) {
+        if (e.keyCode == 27 /*ESC*/ || e.keyCode == 13 /*ENTER*/) {
+            this.setEditing(false);
+        }
     }
 
     render() {
@@ -34,6 +30,7 @@ class Editable extends React.Component {
                         <label>{title}</label>
                         <input
                         type="text"
+                        autoFocus
                         value={this.props.value}
                         onBlur={() => this.setEditing(false)}
                         onKeyDown={e => this.handleKeyDown(e)}
@@ -41,10 +38,9 @@ class Editable extends React.Component {
                     </div>
             );
         } else {
-            return (<div onClick={() => this.setEditing(true)}>
+            return (<div>
                         <label>{title}</label>
-                        <label
-                        >
+                        <label onClick={() => this.setEditing(true)}>
                         {this.props.value}
                         </label>
                     </div>
