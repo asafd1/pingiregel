@@ -118,22 +118,22 @@ exports.getPlayers = function (chatId) {
 }
 
 exports.getPlayer = function (chatId, id) {
-    logger.log("gettinf player by id: " + id);
+    logger.log(`chat_id=${chatId} gettinf player by id: ` + id);
     return db.collection("players").findOne({_id:getCompositeIdWithChatId(chatId, id)});
 }
 
 exports.addPlayer = function (chatId, player) {
-    logger.log("adding player: " + JSON.stringify(player));
+    logger.log(`chat_id=${chatId} adding player: ` + JSON.stringify(player));
     return db.collection("players").insertOne(cloneObjectwithCompositeIdWithChatId(chatId, player));
 }
 
 exports.updatePlayer = function (chatId, id, player) {
-    logger.log("updating player: " + JSON.stringify(player, null, 2));
+    logger.log(`chat_id=${chatId} updating player: ` + JSON.stringify(player, null, 2));
     return db.collection("players").updateOne({_id:getCompositeIdWithChatId(chatId, id)}, { $set: cloneObjectwithCompositeIdWithChatId(chatId, player) });
 }
 
 exports.deletePlayer = function (chatId, id) {
-    logger.log("delete player by id: " + id);
+    logger.log(`chat_id=${chatId} delete player by id: ` + id);
     return db.collection("players").deleteOne({_id:getCompositeIdWithChatId(chatId, id)});
 }
 
