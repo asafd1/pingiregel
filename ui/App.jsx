@@ -4,7 +4,9 @@ import 'bootstrap/dist/css/bootstrap.css';
 import './App.css';
 import EditableListItems from './components/EditableListItems.jsx';
 
-const BASE_URL = "http://localhost:8080/chats/-265465291";
+const CHAT_ID = 1111;
+
+const BASE_URL = `http://localhost:8080/chats/${CHAT_ID}`;
 
 // var items = [
 //   'apple',
@@ -16,8 +18,18 @@ const BASE_URL = "http://localhost:8080/chats/-265465291";
 //   'smartphone'
 // ];
 
-const playersEndpoint=`${BASE_URL}/players`;
+const usersConfig = {
+  playersEndpoint: `${BASE_URL}/players`,
+  editableProperties : {
+    'username' : 'Username',
+    'firstname' : 'First Name',
+    'lastname' : 'Last Name'
+  }
+}
+
 ReactDOM.render(
-    <EditableListItems itemsEndpoint={playersEndpoint}/>, 
+    <EditableListItems 
+      itemsEndpoint={usersConfig.playersEndpoint}
+      editableProperties={usersConfig.editableProperties}/>,
     document.getElementById('root')
   );

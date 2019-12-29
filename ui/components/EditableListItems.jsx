@@ -26,7 +26,8 @@ class EditableListItems extends React.Component {
 
     componentDidMount() {
         this.getItems().then((response) => 
-            this.setState({items : response.map((item) => {return item.firstname;})}));
+            this.setState({items : response})
+        );
     }
 
     handleItemSelected(i) {
@@ -50,23 +51,27 @@ class EditableListItems extends React.Component {
     }
 
     renderUser() {
-        if (this.state.selected >= 0) {
-            const user = {
-                username: this.state.items[this.state.selected],
-                firstname: "fn " + this.state.items[this.state.selected],
-                lastname: "ln " + this.state.items[this.state.selected]
-            }
-            return (
-                <Col md="6" style={{ marginTop: '59px', backgroundColor: 'snow', height: '309px' }}>
-                    <EditableItem 
-                        user={user} 
-                        dirty={this.state.dirty} 
-                        setDirty={this.setDirty.bind(this)}></EditableItem>
-                </Col>
-            )
+        if (this.state.selected < 0) {
+            return;
         }
+
+        const item = this.state.items[this.state.selected];
+        return (
+            <Col md="6" style={{ marginTop: '59px', backgroundColor: 'snow', height: '309px' }}>
+                <EditableItem 
+                    editableProperties={this.props.editableProperties}
+                    item={item} 
+                    dirty={this.state.dirty} 
+                    setDirty={this.setDirty.bind(this)}></EditableItem>
+            </Col>
+        )
     }
     
+    getItemTitle(item) {
+        // TODO configuration
+        return Object.values(item)[2] + " " + Object.values(item)[3];
+    }
+
     render() {
         return (
             <Container>
@@ -76,7 +81,7 @@ class EditableListItems extends React.Component {
                 <Row>
                     <Col md="6">
                         <FilteredList 
-                            items={this.state.items} 
+                            items={this.state.items.map((item) => this.getItemTitle(item))} 
                             handleItemSelected={(i) => this.handleItemSelected(i)}
                             handleItemDeselected={(i) => this.handleItemDeselected(i)}
                         />

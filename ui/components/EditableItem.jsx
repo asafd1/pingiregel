@@ -3,23 +3,27 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Button from 'react-bootstrap/Button';
-import ButtonToolbar from 'react-bootstrap/ButtonToolbar';
 import Form from 'react-bootstrap/Form';
 import FormGroup from 'react-bootstrap/FormGroup';
 import FormLabel from 'react-bootstrap/FormLabel';
+import Editable from './Editable.jsx';
 
 class EditableItem extends React.Component {
     constructor(props) {
         super(props);
+
+        this.state = {
+            item: props.item,
+            dirty: new Array(Object.values(props.item).length).fill(false)
+        };
+
     }
 
     save() {
-        console.log("SAVE");
         this.props.setDirty(false);
     }
 
     cancel() {
-        console.log("CANCEL");
         this.props.setDirty(false);
     }
 
@@ -51,49 +55,19 @@ class EditableItem extends React.Component {
     }
 
     render() {
+        const labels = Object.entries(this.props.editableProperties);
         return (
-
-            <Form>
-                <FormGroup as={Row} controlId="formPlaintextUsername" onClick={this.onClickUsername.bind(this)}>
-                    <div>
-                        <FormLabel column sm="20">
-                        Username:
-                        </FormLabel>
-                        {' '}
-                        <FormLabel column sm="20">{this.props.user.username}</FormLabel>
-                    </div>
-                </FormGroup>
-
-                <FormGroup as={Row} controlId="formPlaintextUsername">
-                    <div>
-                        <FormLabel column sm="20">
-                        First name:
-                        </FormLabel>
-                        {' '}
-                        <FormLabel column sm="20">{this.props.user.firstname}</FormLabel>
-                    </div>
-                </FormGroup>
-
-                <FormGroup as={Row} controlId="formPlaintextUsername">
-                    <div>
-                        <FormLabel column sm="20">
-                        Last name:
-                        </FormLabel>
-                        {' '}
-                        <FormLabel column sm="20">{this.props.user.lastname}</FormLabel>
-                    </div>
-                </FormGroup>
-                {
-                this.renderButtons()
-                }
-            </Form>
-
-            // <Container>
-                
-            //     <Row><Col id="username"  onClick={this.onClickUsername.bind(this)}>username:  {this.props.user.username}</Col></Row>
-            //     <Row><Col id="firstname" onClick={this.onClickUsername.bind(this)}>firstname: {this.props.user.firstname}</Col></Row>
-            //     <Row><Col id="lastname"  onClick={this.onClickUsername.bind(this)}>lastname:  {this.props.user.lastname}</Col></Row>
-            // </Container>
+            <Container>
+                {labels.map((entry, i) => {
+                    const propertyName = entry[0];
+                    const propertyTitle = entry[1];
+                    const propertyValue = this.props.item[propertyName];
+                    return(<Row
+                        key={propertyName}>
+                        <Editable title={propertyTitle} value={propertyValue}/>
+                    </Row>);
+                })}
+            </Container>
         );
     }
 }
