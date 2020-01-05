@@ -15,4 +15,5 @@ button:focus {outline:0;}
 
 .ui.basic.label {
   border: 0px;
+  font: 14px "Century Gothic", Futura, sans-serif;
 }

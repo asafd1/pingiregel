@@ -50,15 +50,16 @@ class EditableListItems extends React.Component {
         });
     }
 
-    renderUser() {
+    renderItem() {
         if (this.state.selected < 0) {
             return;
         }
 
         const item = this.state.items[this.state.selected];
         return (
-            <Col md="6" style={{ marginTop: '59px', backgroundColor: 'snow', height: '309px' }}>
+            <Col md="6" style={{marginTop: '59px', backgroundColor: 'white', height: '309px' }}>
                 <EditableItem 
+                    key={item._id}
                     editableProperties={this.props.editableProperties}
                     item={item} 
                     dirty={this.state.dirty} 
@@ -76,9 +77,6 @@ class EditableListItems extends React.Component {
         return (
             <Container>
                 <Row>
-                    <Col id="heading">heading</Col>
-                </Row>
-                <Row>
                     <Col md="6">
                         <FilteredList 
                             items={this.state.items.map((item) => this.getItemTitle(item))} 
@@ -86,7 +84,7 @@ class EditableListItems extends React.Component {
                             handleItemDeselected={(i) => this.handleItemDeselected(i)}
                         />
                     </Col>
-                    {this.renderUser()}
+                    {this.renderItem()}
                 </Row>
             </Container>
         );
