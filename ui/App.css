@@ -12,3 +12,7 @@ button:focus {outline:0;}
 .filtered-list .filter {
   margin-bottom: 21px;
 }
+
+.ui.basic.label {
+  border: 0px;
+}
