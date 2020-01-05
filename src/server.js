@@ -5,12 +5,13 @@ var fs = require('fs');
 var https = require('https');
 var httpContext = require('express-http-context');
 var Chat = require('./chat.js');
+var cors = require('cors')
 
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(httpContext.middleware);
-app.use(httpContext.middleware);
+app.use(cors());
 
 // production mode
 if (process.argv[2] == undefined) {
@@ -52,9 +53,6 @@ if (process.argv[2] == "local") {
 }
 
 function sendResponse(response, value) {
-  if (process.argv[2] == "local") {
-    response.set('Access-Control-Allow-Origin', '*');
-  }
   if (value) {
     response.send(DB.prepareForSend(value));
   } else {
@@ -69,7 +67,9 @@ function verifyPassword(request, response, next) {
 function shouldVerifyPassword(request) {
   if (request.path.startsWith("/webhook")) return false;
   if (request.path.startsWith("/misc")) return true;
-  if (request.method != "GET") return true;
+  if (process.argv[2] != "local") {
+    if (request.method != "GET") return true;
+  }
 }
 
 function setMessageContext(request) {
@@ -166,7 +166,7 @@ app.route('/chats/:chatId/players')
 })
 .post(function(request, response, next) {
   p = DB.addPlayer(Number(request.params.chatId), request.body);
-  p.then((value) => {sendResponse(response, value)});
+  p.then((value) => {sendResponse(response, request.body)});
 });
 
 app.route('/chats/:chatId/players/:id')
@@ -179,8 +179,8 @@ app.route('/chats/:chatId/players/:id')
   p.then((value) => {sendResponse(response, value)});
 })
 .put(function(request, response, next) {
-  p = DB.updatePlayer(Number(request.params.chatId), request.params.id);
-  p.then((value) => {sendResponse(response, value)});
+  p = DB.updatePlayer(Number(request.params.chatId), request.params.id, request.body);
+  p.then((value) => {sendResponse(response, request.body)});
 });
 
 

@@ -20,7 +20,7 @@ class Editable extends React.Component {
         this.setState({isEditing: isEditiing});
     }
 
-    handleValueSet(newValue) {
+    save(newValue) {
         if (newValue == this.state.value) {
             return;
         }
@@ -32,6 +32,8 @@ class Editable extends React.Component {
             isDirty: true,
             value: newValue
         });
+
+        this.props.valueChanged(newValue);
     }
 
     undo() {
@@ -43,6 +45,8 @@ class Editable extends React.Component {
             isDirty: false,
             value: this.state.origValue
         });
+
+        this.props.valueChanged(this.state.origValue);
     }
 
     handleKeyDown(e) {
@@ -51,7 +55,7 @@ class Editable extends React.Component {
         }
 
         if (e.keyCode == 13 /*ENTER*/) {
-            this.handleValueSet(e.nativeEvent.target.value);
+            this.save(e.nativeEvent.target.value);
         }
     }
 

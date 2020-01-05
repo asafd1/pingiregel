@@ -16,12 +16,26 @@ class EditableListItems extends React.Component {
     }
 
     async getItems() {
-        const response =
-            await fetch(this.props.itemsEndpoint
-                //   ,{ headers: {'Content-Type': 'application/json'}}
-            )
-        console.log(response.body);
-        return await response.json();
+        const response = 
+            await fetch(this.props.itemsEndpoint, {
+                headers: {'Content-Type': 'application/json'}
+        });
+        const json = await response.json();
+        console.log(json);
+        return json;
+    }
+
+    async updateItem(item) {
+        const url = this.props.itemsEndpoint + "/" + item._id;
+        const response = 
+            await fetch(url, {
+                method: 'PUT',
+                cache: 'no-cache',
+                headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(item)
+          });
+          this.componentDidMount()
+          return await response.json();
     }
 
     componentDidMount() {
@@ -44,12 +58,6 @@ class EditableListItems extends React.Component {
         });
     }
 
-    setDirty(dirty) {
-        this.setState({ 
-            dirty : dirty
-        });
-    }
-
     renderItem() {
         if (this.state.selected < 0) {
             return;
@@ -63,7 +71,9 @@ class EditableListItems extends React.Component {
                     editableProperties={this.props.editableProperties}
                     item={item} 
                     dirty={this.state.dirty} 
-                    setDirty={this.setDirty.bind(this)}></EditableItem>
+                    updateItem={(item) => this.updateItem(item)}
+                    >
+                    </EditableItem>
             </Col>
         )
     }

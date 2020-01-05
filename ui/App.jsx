@@ -8,16 +8,6 @@ const CHAT_ID = 1111;
 
 const BASE_URL = `http://localhost:8080/chats/${CHAT_ID}`;
 
-// var items = [
-//   'apple',
-//   'computer',
-//   'windows',
-//   'mouse',
-//   'keyboard',
-//   'monitor',
-//   'smartphone'
-// ];
-
 const usersConfig = {
   playersEndpoint: `${BASE_URL}/players`,
   editableProperties : {

@@ -14,6 +14,15 @@ class EditableItem extends React.Component {
 
     }
 
+    update(name, value) {
+        const item = this.state.item;
+        item[name] = value;
+        this.setState({
+            item: item
+        });
+        this.props.updateItem(item);
+    }
+
     render() {
         const labels = Object.entries(this.props.editableProperties);
         return (
@@ -25,7 +34,11 @@ class EditableItem extends React.Component {
                     return(<Row
                         key={propertyName}
                         style={{margin: '10px'}}>
-                        <Editable title={propertyTitle} value={propertyValue}/>
+                        <Editable 
+                            title={propertyTitle}
+                            value={propertyValue}
+                            valueChanged={(newValue) => this.update(propertyName, newValue)}
+                        />
                     </Row>);
                 })}
             </Container>
