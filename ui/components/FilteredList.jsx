@@ -11,6 +11,7 @@ class FilteredList extends React.Component {
         super(props);
         this.state = { 
             searchText: "",
+            filteredItemsCount: props.items.length,
             selected: -1
         };
     }
@@ -21,7 +22,7 @@ class FilteredList extends React.Component {
 
     handleKeysDown(e) {
         const currentSelected = this.state.selected;
-        if (e.keyCode == KEY_DOWN && currentSelected < this.state.filteredItems.length - 1) {
+        if (e.keyCode == KEY_DOWN && currentSelected < this.state.filteredItemsCount - 1) {
             const newSelected = currentSelected + 1;
             this.props.handleItemDeselected(currentSelected);
             this.props.handleItemSelected(newSelected);
@@ -54,6 +55,7 @@ class FilteredList extends React.Component {
 
     render() {
         const searchText = this.state.searchText;
+        this.state.filteredItemsCount = 0;
 
         return (
             <div className="list filtered-list">
@@ -64,6 +66,7 @@ class FilteredList extends React.Component {
                         if (item.search(searchText) < 0 && i != this.state.selected) {
                             return;
                         }
+                        this.state.filteredItemsCount++;
                         return(<ListGroup.Item 
                             key={i}
                             action
