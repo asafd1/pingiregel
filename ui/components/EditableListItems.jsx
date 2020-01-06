@@ -10,8 +10,7 @@ class EditableListItems extends React.Component {
         super(props);
         this.state = {
             items: [],
-            selected: -1,
-            dirty: false
+            selected: -1
         };
     }
 
@@ -46,15 +45,13 @@ class EditableListItems extends React.Component {
 
     handleItemSelected(i) {
         this.setState({ 
-            selected : i,
-            dirty : false
+            selected : i
         });
     }
 
     handleItemDeselected(i) {
         this.setState({ 
-            selected : -1,
-            dirty : false
+            selected : -1
         });
     }
 
@@ -70,7 +67,6 @@ class EditableListItems extends React.Component {
                     key={item._id}
                     editableProperties={this.props.editableProperties}
                     item={item} 
-                    dirty={this.state.dirty} 
                     updateItem={(item) => this.updateItem(item)}
                     >
                     </EditableItem>

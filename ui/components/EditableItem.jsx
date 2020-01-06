@@ -8,8 +8,7 @@ class EditableItem extends React.Component {
         super(props);
 
         this.state = {
-            item: props.item,
-            dirty: new Array(Object.values(props.item).length).fill(false)
+            item: props.item
         };
 
     }

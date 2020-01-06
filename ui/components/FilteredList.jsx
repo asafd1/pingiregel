@@ -10,35 +10,13 @@ class FilteredList extends React.Component {
     constructor(props) {
         super(props);
         this.state = { 
-            allItems: this.props.items,
-            filteredItems: this.props.items,
+            searchText: "",
             selected: -1
         };
     }
-
-    setItems(items) {
-        this.setState({ allItems: items });
-    }
-
-    static getDerivedStateFromProps(nextProps, prevState){
-        if (_.isEqual(nextProps.items, prevState.allItems)){
-            return null;
-        }
-          
-        return { 
-            allItems : nextProps.items,
-            filteredItems : nextProps.items
-        };
-    }
-    
-    handleSearchInput(e) {
-        var searchText = e.target.value;
-        
-        var filteredItems = this.props.items.filter(function(item) {
-            return item.search(searchText) > -1;
-        });
-        
-        this.setState({ filteredItems: filteredItems });
+   
+    handleSearchInput(e) {        
+        this.setState({ searchText : e.target.value });
     }
 
     handleKeysDown(e) {
@@ -75,12 +53,17 @@ class FilteredList extends React.Component {
     }
 
     render() {
+        const searchText = this.state.searchText;
+
         return (
             <div className="list filtered-list">
                 <input className="filter form-control" onInput={this.handleSearchInput.bind(this)} type="text" placeholder="Search for..."/>
                 <ListGroup 
                     onKeyDown={this.handleKeysDown.bind(this)}>
-                    {this.state.filteredItems.map((item, i) => {
+                    {this.props.items.map((item, i) => {
+                        if (item.search(searchText) < 0 && i != this.state.selected) {
+                            return;
+                        }
                         return(<ListGroup.Item 
                             key={i}
                             action

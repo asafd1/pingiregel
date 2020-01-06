@@ -13,7 +13,6 @@ class Editable extends React.Component {
             isEditing: false,
             isDirty: false
         };
-
     }
 
     setEditing(isEditiing) {
