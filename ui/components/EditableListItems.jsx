@@ -25,7 +25,7 @@ class EditableListItems extends React.Component {
     }
 
     async updateItem(item) {
-        const url = this.props.itemsEndpoint + "/" + item._id;
+        const url = this.props.itemsEndpoint + "/" + this.props.id(item);
         const response = 
             await fetch(url, {
                 method: 'PUT',
@@ -37,22 +37,39 @@ class EditableListItems extends React.Component {
           return await response.json();
     }
 
+    async deleteItem(id) {
+        const url = this.props.itemsEndpoint + "/" + id;
+        const response = 
+            await fetch(url, {
+                method: 'DELETE',
+                cache: 'no-cache',
+                headers: {'Content-Type': 'application/json'}
+          });
+          this.componentDidMount()
+          return await response.json();
+    }
+    
     componentDidMount() {
         this.getItems().then((response) => 
             this.setState({items : response})
         );
     }
 
-    handleItemSelected(i) {
+    handleItemSelected(index) {
         this.setState({ 
-            selected : i
+            selected : index
         });
     }
 
-    handleItemDeselected(i) {
+    handleItemDeselected() {
         this.setState({ 
             selected : -1
         });
+    }
+
+    handleItemDeleted(id) {
+        this.handleItemDeselected();
+        this.deleteItem(id); 
     }
 
     renderItem() {
@@ -64,7 +81,7 @@ class EditableListItems extends React.Component {
         return (
             <Col md="6" style={{marginTop: '59px', backgroundColor: 'white', height: '309px' }}>
                 <EditableItem 
-                    key={item._id}
+                    key={this.props.id(item)}
                     editableProperties={this.props.editableProperties}
                     item={item} 
                     updateItem={(item) => this.updateItem(item)}
@@ -74,20 +91,18 @@ class EditableListItems extends React.Component {
         )
     }
     
-    getItemTitle(item) {
-        // TODO configuration
-        return Object.values(item)[2] + " " + Object.values(item)[3];
-    }
-
     render() {
         return (
             <Container>
                 <Row>
                     <Col md="6">
                         <FilteredList 
-                            items={this.state.items.map((item) => this.getItemTitle(item))} 
-                            handleItemSelected={(i) => this.handleItemSelected(i)}
-                            handleItemDeselected={(i) => this.handleItemDeselected(i)}
+                            items={this.state.items} 
+                            handleItemSelected={(index) => this.handleItemSelected(index)}
+                            handleItemDeselected={() => this.handleItemDeselected()}
+                            handleItemDeleted={(id) => this.handleItemDeleted(id)}
+                            id={(item) => this.props.id(item)}
+                            title={(item) => this.props.title(item)}
                         />
                     </Col>
                     {this.renderItem()}

@@ -17,3 +17,9 @@ button:focus {outline:0;}
   border: 0px;
   font: 14px "Century Gothic", Futura, sans-serif;
 }
+
+.warning {
+    background-color: rgba(246, 117, 125, 0.5);
+    color: rgba(246, 117, 125, 0.5);
+    transition: color 5s;
+}
